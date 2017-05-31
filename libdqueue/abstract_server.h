@@ -52,7 +52,7 @@ struct abstract_server {
   params _params;
 
   EXPORT abstract_server(boost::asio::io_service *service, params p);
-  EXPORT ~abstract_server();
+  EXPORT virtual ~abstract_server();
   EXPORT void serverStart();
 
   EXPORT void start_accept(socket_ptr sock);

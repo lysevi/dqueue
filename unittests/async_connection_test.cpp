@@ -24,6 +24,9 @@ struct testable_client:public abstract_client {
 	testable_client(boost::asio::io_service *service) : abstract_client(service) {
 	}
 
+	~testable_client() {
+	}
+
 	void onNewMessage(const network_message_ptr &d, bool & /*cancel*/) override{
 		auto qh = reinterpret_cast<message_header *>(d->data);
 
@@ -47,6 +50,8 @@ struct testable_server :public abstract_server {
   testable_server(boost::asio::io_service *service, const abstract_server::params&p) : abstract_server(service,p) {
   }
 
+  ~testable_server() {
+  }
  /* void onNetworkError(const boost::system::error_code &err) {
     THROW_EXCEPTION("error on - ", err.message());
   }*/

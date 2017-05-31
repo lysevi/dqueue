@@ -12,6 +12,7 @@ struct abstract_client {
   socket_ptr _socket = nullptr;
 
   EXPORT abstract_client(boost::asio::io_service *service);
+  EXPORT ~abstract_client();
   EXPORT void connectTo(const std::string &host, const std::string &port);
   EXPORT void onNetworkError(const boost::system::error_code &err);
   EXPORT void onDataRecv(const network_message_ptr &d, bool &cancel);

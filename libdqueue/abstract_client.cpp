@@ -10,6 +10,10 @@ abstract_client::abstract_client(boost::asio::io_service *service) : _service(se
   _async_connection = std::make_shared<async_connection>(on_d, on_n);
 }
 
+abstract_client::~abstract_client() {
+	_async_connection->full_stop();
+}
+
 void abstract_client::onNetworkError(const boost::system::error_code &err) {
   THROW_EXCEPTION("error on - ", err.message());
 }

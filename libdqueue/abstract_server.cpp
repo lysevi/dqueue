@@ -13,6 +13,10 @@ abstract_server::abstract_server(boost::asio::io_service *service,
     : _service(service), _params(p) {
 	_next_id.store(0);
 } 
+
+abstract_server::~abstract_server() {
+	_connections.clear();
+}
 // 
 //void abstract_server::onNetworkError(const boost::system::error_code &err) {
 //  THROW_EXCEPTION("error on - ", err.message());

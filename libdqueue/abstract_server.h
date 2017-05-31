@@ -34,6 +34,9 @@ struct abstract_server {
 		  _async_connection->set_id(id);
 		  _async_connection->start(sock);
 	  }
+	  ~io() {
+		  _async_connection->full_stop();
+	  }
 
 	  void onNetworkError(const boost::system::error_code &err) {
 		  //TODO call abstract virtual method.
@@ -49,7 +52,7 @@ struct abstract_server {
   params _params;
 
   EXPORT abstract_server(boost::asio::io_service *service, params p);
-
+  EXPORT ~abstract_server();
   EXPORT void serverStart();
 
   EXPORT void start_accept(socket_ptr sock);

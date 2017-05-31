@@ -9,7 +9,7 @@ ENDIF()
 
 MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 
-option(DQUEUE_ENABLE_TESTS "Enable testing of the dequeue." ON)
+option(DQUEUE_ENABLE_TESTS "Enable testing of the dqueue." ON)
 option(DQUEUE_ENABLE_BENCHMARKS "Enable build benchmarks." ON)
 option(DQUEUE_ENABLE_DOUBLECHECKS "More checks in code." OFF)
 option(DQUEUE_ASAN_UBSAN "Enable address & undefined behavior sanitizer for binary." OFF)

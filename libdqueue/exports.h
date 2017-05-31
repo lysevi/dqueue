@@ -4,10 +4,10 @@
 
 #ifdef SHARED_EXPORTS_BUILT_AS_STATIC
 #  define EXPORT
-#  define DEQUEUE_NO_EXPORT
+#  define DQUEUE_NO_EXPORT
 #else
 #  ifndef EXPORT
-#    ifdef dequeue_EXPORTS
+#    ifdef dqueue_EXPORTS
         /* We are building this library */
 #      define EXPORT __declspec(dllexport)
 #    else
@@ -16,26 +16,26 @@
 #    endif
 #  endif
 
-#  ifndef DEQUEUE_NO_EXPORT
-#    define DEQUEUE_NO_EXPORT 
+#  ifndef DQUEUE_NO_EXPORT
+#    define DQUEUE_NO_EXPORT 
 #  endif
 #endif
 
-#ifndef DEQUEUE_DEPRECATED
-#  define DEQUEUE_DEPRECATED __declspec(deprecated)
+#ifndef DQUEUE_DEPRECATED
+#  define DQUEUE_DEPRECATED __declspec(deprecated)
 #endif
 
-#ifndef DEQUEUE_DEPRECATED_EXPORT
-#  define DEQUEUE_DEPRECATED_EXPORT EXPORT DEQUEUE_DEPRECATED
+#ifndef DQUEUE_DEPRECATED_EXPORT
+#  define DQUEUE_DEPRECATED_EXPORT EXPORT DQUEUE_DEPRECATED
 #endif
 
-#ifndef DEQUEUE_DEPRECATED_NO_EXPORT
-#  define DEQUEUE_DEPRECATED_NO_EXPORT DEQUEUE_NO_EXPORT DEQUEUE_DEPRECATED
+#ifndef DQUEUE_DEPRECATED_NO_EXPORT
+#  define DQUEUE_DEPRECATED_NO_EXPORT DQUEUE_NO_EXPORT DQUEUE_DEPRECATED
 #endif
 
 #if 0 /* DEFINE_NO_DEPRECATED */
-#  ifndef DEQUEUE_NO_DEPRECATED
-#    define DEQUEUE_NO_DEPRECATED
+#  ifndef DQUEUE_NO_DEPRECATED
+#    define DQUEUE_NO_DEPRECATED
 #  endif
 #endif
 

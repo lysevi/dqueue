@@ -19,17 +19,17 @@ SET(SRC
 	 ${UTILS_HDRS}  ${UTILS_SRC} 
 	 ${UTILS_ASYNC_HDRS}  ${UTILS_ASYNC_SRC})
 
-SET(DQUEUE_LIBS dequeue ${Boost_LIBRARIES} ${JEMALLOC_LIBS} CACHE STRING "dequeue libs.")
+SET(DQUEUE_LIBS dqueue ${Boost_LIBRARIES} ${JEMALLOC_LIBS} CACHE STRING "dqueue libs.")
 
-add_library(dequeue SHARED ${SRC})
-TARGET_LINK_LIBRARIES(dequeue ${Boost_LIBRARIES} ${JEMALLOC_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+add_library(dqueue SHARED ${SRC})
+TARGET_LINK_LIBRARIES(dqueue ${Boost_LIBRARIES} ${JEMALLOC_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 IF(WIN32)
- target_link_libraries(dequeue wsock32 ws2_32)
+ target_link_libraries(dqueue wsock32 ws2_32)
 endif()
 
-GENERATE_EXPORT_HEADER(dequeue
-    BASE_NAME dequeue
+GENERATE_EXPORT_HEADER(dqueue
+    BASE_NAME dqueue
     EXPORT_MACRO_NAME EXPORT
     EXPORT_FILE_NAME exports.h
     STATIC_DEFINE SHARED_EXPORTS_BUILT_AS_STATIC)

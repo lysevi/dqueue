@@ -11,7 +11,7 @@ using namespace dqueue;
 abstract_server::abstract_server(boost::asio::io_service *service,
                                  abstract_server::params p)
     : _service(service), _params(p) {
-  
+	_next_id.store(0);
 } 
 // 
 //void abstract_server::onNetworkError(const boost::system::error_code &err) {

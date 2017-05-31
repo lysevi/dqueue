@@ -10,7 +10,7 @@ struct abstract_server {
   boost::asio::io_service *_service = nullptr;
   std::shared_ptr<boost::asio::ip::tcp::acceptor> _acc = nullptr;
   bool is_started = false;
-  std::atomic_int  _next_id=0;
+  std::atomic_int  _next_id;
 
   struct params {
     unsigned short port;
@@ -36,6 +36,7 @@ struct abstract_server {
 	  }
 
 	  void onNetworkError(const boost::system::error_code &err) {
+		  //TODO call abstract virtual method.
 	  }
 	  
 	  void onDataRecv(const network_message_ptr &d, bool &cancel) {

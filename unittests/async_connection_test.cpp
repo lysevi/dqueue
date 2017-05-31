@@ -1,5 +1,7 @@
 #include "helpers.h"
 #include <libdqueue/async_connection.h>
+#include <libdqueue/abstract_client.h>
+#include <libdqueue/abstract_server.h>
 #include <libdqueue/utils/logger.h>
 #include <catch.hpp>
 
@@ -16,63 +18,13 @@ using namespace dqueue;
 using namespace dqueue::utils;
 
 
-struct testable_client {
+struct testable_client:public abstract_client {
 	size_t message_one = 0;
-	std::shared_ptr<async_connection> _async_connection = nullptr;
-	boost::asio::io_service *_service = nullptr;
-	socket_ptr _socket = nullptr;
-	std::shared_ptr<ip::tcp::acceptor> _acc = nullptr;
-	bool call_accept = false;
 
-	testable_client(boost::asio::io_service *service) : _service(service) {
-		async_connection::onDataRecvHandler on_d = [this](const network_message_ptr &d, bool &cancel) {
-			onDataRecv(d, cancel);
-		};
-		async_connection::onNetworkErrorHandler on_n =
-			[this](const boost::system::error_code &err) { onNetworkError(err); };
-		_async_connection = std::make_shared<async_connection>(on_d, on_n);
+	testable_client(boost::asio::io_service *service) : abstract_client(service) {
 	}
 
-	void onNetworkError(const boost::system::error_code &err) {
-		THROW_EXCEPTION("error on - ", err.message());
-	}
-
-	void connectTo(const std::string &host, const std::string &port) {
-		ip::tcp::resolver resolver(*_service);
-
-		ip::tcp::resolver::query query(host, port, ip::tcp::resolver::query::canonical_name);
-		ip::tcp::resolver::iterator iter = resolver.resolve(query);
-
-		for (; iter != ip::tcp::resolver::iterator(); ++iter) {
-			auto ep = iter->endpoint();
-			if (ep.protocol() == ip::tcp::v4()) {
-				break;
-			}
-		}
-		if (iter == ip::tcp::resolver::iterator()) {
-			THROW_EXCEPTION("hostname not found.");
-		}
-		ip::tcp::endpoint ep = *iter;
-		logger_info("client: ", host, ":", port, " - ", ep.address().to_string());
-
-		_socket = std::make_shared<ip::tcp::socket>(*_service);
-
-		_socket->async_connect(ep, [this](auto ec) {
-			if (ec) {
-				auto msg = ec.message();
-				THROW_EXCEPTION("dqueue::client: error on connect - ", msg);
-			}
-			this->_async_connection->start(this->_socket);
-
-			logger_info("client: send hello ");
-
-			auto nd = std::make_shared<network_message>(1);
-
-			this->_async_connection->send(nd);
-		});
-	}
-
-	void onDataRecv(const network_message_ptr &d, bool & /*cancel*/) {
+	void onNewMessage(const network_message_ptr &d, bool & /*cancel*/) override{
 		auto qh = reinterpret_cast<message_header *>(d->data);
 
 		int kind = (network_message::message_kind)qh->kind;
@@ -89,59 +41,25 @@ struct testable_client {
 	}
 };
 
-struct testable_server {
+struct testable_server :public abstract_server {
   size_t message_one = 0;
-  std::shared_ptr<async_connection> _async_connection = nullptr;
-  boost::asio::io_service *_service = nullptr;
-  socket_ptr _socket = nullptr;
-  std::shared_ptr<ip::tcp::acceptor> _acc = nullptr;
-  bool call_accept = false;
-
-  testable_server(boost::asio::io_service *service) : _service(service) {
-    async_connection::onDataRecvHandler on_d = [this](const network_message_ptr &d, bool &cancel) {
-      onDataRecv(d, cancel);
-    };
-    async_connection::onNetworkErrorHandler on_n =
-        [this](const boost::system::error_code &err) { onNetworkError(err); };
-    _async_connection = std::make_shared<async_connection>(on_d, on_n);
+ 
+  testable_server(boost::asio::io_service *service, const abstract_server::params&p) : abstract_server(service,p) {
   }
 
-  void onNetworkError(const boost::system::error_code &err) {
+ /* void onNetworkError(const boost::system::error_code &err) {
     THROW_EXCEPTION("error on - ", err.message());
-  }
+  }*/
 
-  void serverStart(const unsigned short port) {
-    ip::tcp::endpoint ep(ip::tcp::v4(), port);
-    auto new_socket = std::make_shared<ip::tcp::socket>(*_service);
-    _acc = std::make_shared<ip::tcp::acceptor>(*_service, ep);
-    start_accept(new_socket);
-    call_accept = true;
-  }
-
-  void start_accept(socket_ptr sock) {
-    _acc->async_accept(*sock, std::bind(&testable_server::handle_accept, this, sock, _1));
-  }
-
-  void handle_accept(socket_ptr sock, const boost::system::error_code &err) {
-    if (err) {
-      THROW_EXCEPTION("dariadb::server: error on accept - ", err.message());
-    }
-    logger_info("server: accept connection.");
-	_socket = sock;
-    this->_async_connection->start(_socket);
-
-    socket_ptr new_sock = std::make_shared<ip::tcp::socket>(*_service);
-    start_accept(new_sock);
-  }
-
-  void onDataRecv(const network_message_ptr &d, bool & /*cancel*/) {
+  
+  void onNewMessage(abstract_server::io&io, const network_message_ptr &d, bool &cancel) {
     auto qh = reinterpret_cast<message_header *>(d->data);
 
     int kind = (network_message::message_kind)qh->kind;
     switch (kind) {
     case 1: {
       message_one++;
-      this->_async_connection->send(d);
+	  io._async_connection->send(d);
       break;
     }
     default:
@@ -155,9 +73,11 @@ bool server_stop = false;
 testable_server *server = nullptr;
 void server_thread() {
   boost::asio::io_service service;
-  server = new testable_server(&service);
+  abstract_server::params p;
+  p.port = 4040;
+  server = new testable_server(&service,p);
 
-  server->serverStart(4040);
+  server->serverStart();
   while (!server_stop) {
     service.poll_one();
   }
@@ -170,7 +90,7 @@ TEST_CASE("async_connection") {
   boost::asio::io_service service;
   testable_client client(&service);
   std::thread t(server_thread);
-  while (server == nullptr || !server->call_accept) {
+  while (server == nullptr || !server->is_started) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 

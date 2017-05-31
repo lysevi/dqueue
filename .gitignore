@@ -7,7 +7,7 @@
 *.VC.db
 *.opendb
 *.so
-*_export.h
+*exports.h
 *.a
 Makefile
 nbproject

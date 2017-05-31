@@ -52,8 +52,8 @@ ENDIF()
 IF(WIN32 AND MSVC)
   find_package(Boost 1.54.0 COMPONENTS ${BOOST_DEP} REQUIRED)
 else()
-  set(BOOST_DEP ${BOOST_DEP} program_options)
-  find_package(Boost  REQUIRED ${BOOST_DEP})
+  set(BOOST_DEP ${BOOST_DEP})
+  find_package(Boost REQUIRED ${BOOST_DEP})
 ENDIF()
 
 

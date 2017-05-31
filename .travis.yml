@@ -12,6 +12,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - libboost-dev  
+      - libboost-system-dev  
       - libasio-dev 
       - cmake  
       - g++-6  

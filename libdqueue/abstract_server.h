@@ -2,6 +2,7 @@
 
 #include <libdqueue/async_connection.h>
 #include <libdqueue/exports.h>
+#include <mutex>
 
 namespace dqueue {
 
@@ -42,6 +43,7 @@ struct abstract_server {
 	  }
   };
 
+  std::mutex _locker_connections;
   std::list<std::shared_ptr<io>> _connections;
   params _params;
 

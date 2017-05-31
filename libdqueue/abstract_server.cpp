@@ -38,10 +38,11 @@ void abstract_server::handle_accept(socket_ptr sock,
   }
   logger_info("server: accept connection.");
   
+  _locker_connections.lock();
   auto new_client=std::make_shared<io>(_next_id, sock, this);
-  _next_id++; //TODO make thread safety
+  _next_id++;
   this->_connections.push_back(new_client);
-
+  _locker_connections.unlock();
   socket_ptr new_sock = std::make_shared<boost::asio::ip::tcp::socket>(*_service);
   
   

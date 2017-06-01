@@ -31,22 +31,30 @@ void AbstractServer::serverStart() {
 }
 
 void AbstractServer::start_accept(socket_ptr sock) {
-  _acc->async_accept(*sock, std::bind(&AbstractServer::handle_accept, this, sock, _1));
+  _acc->async_accept(*sock, std::bind(&AbstractServer::handle_accept, this, this->shared_from_this(), sock, _1));
 }
 
-void AbstractServer::handle_accept(socket_ptr sock,
+void AbstractServer::handle_accept(const std::shared_ptr<AbstractServer>& self, socket_ptr sock,
                                    const boost::system::error_code &err) {
   if (err) {
-    THROW_EXCEPTION("dariadb::server: error on accept - ", err.message());
+	if (err == boost::asio::error::operation_aborted ||
+		err == boost::asio::error::connection_reset ||
+		err == boost::asio::error::eof) {
+		return;
+	}
+	else {
+		THROW_EXCEPTION("dariadb::server: error on accept - ", err.message());
+	}
   }
-  logger_info("server: accept connection.");
+  else {
+	  logger_info("server: accept connection.");
 
-  _locker_connections.lock();
-  auto new_client = std::make_shared<io>(_next_id, sock, this);
-  _next_id++;
-  this->_connections.push_back(new_client);
-  _locker_connections.unlock();
+	  _locker_connections.lock();
+	  auto new_client = std::make_shared<io>(_next_id, sock, this);
+	  _next_id++;
+	  this->_connections.push_back(new_client);
+	  _locker_connections.unlock();
+  }
   socket_ptr new_sock = std::make_shared<boost::asio::ip::tcp::socket>(*_service);
-
   start_accept(new_sock);
 }

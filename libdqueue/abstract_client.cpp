@@ -5,9 +5,9 @@ using namespace dqueue;
 AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &params)
     : _service(service), _params(params) {
   AsyncConnection::onDataRecvHandler on_d =
-      [this](const NetworkMessage_ptr &d, bool &cancel) { onDataRecv(d, cancel); };
+      [this](const NetworkMessage_ptr &d, bool &cancel) { this->onDataRecv(d, cancel); };
   AsyncConnection::onNetworkErrorHandler on_n =
-      [this](const boost::system::error_code &err) { onNetworkError(err); };
+      [this](const boost::system::error_code &err) { this->onNetworkError(err); };
   _async_connection = std::make_shared<AsyncConnection>(on_d, on_n);
 }
 
@@ -51,14 +51,14 @@ void AbstractClient::async_connect() {
               ep.address().to_string());
 
   _socket = std::make_shared<boost::asio::ip::tcp::socket>(*_service);
-
-  _socket->async_connect(ep, [this](auto ec) {
+  auto self = this->shared_from_this();
+  _socket->async_connect(ep, [self](auto ec) {
     if (ec) {
-      onNetworkError(ec);
+		self->onNetworkError(ec);
     } else {
-      this->_async_connection->start(this->_socket);
-      isConnected = true;
-      this->onConnect();
+		self->_async_connection->start(self->_socket);
+		self->isConnected = true;
+		self->onConnect();
     }
   });
 }

@@ -6,7 +6,7 @@
 
 namespace dqueue {
 
-struct AbstractServer {
+struct AbstractServer: public std::enable_shared_from_this<AbstractServer>{
   boost::asio::io_service *_service = nullptr;
   std::shared_ptr<boost::asio::ip::tcp::acceptor> _acc = nullptr;
   bool is_started = false;
@@ -58,7 +58,7 @@ struct AbstractServer {
   EXPORT void serverStart();
 
   EXPORT void start_accept(socket_ptr sock);
-  EXPORT void handle_accept(socket_ptr sock, const boost::system::error_code &err);
+  EXPORT void handle_accept(const std::shared_ptr<AbstractServer>& self, socket_ptr sock, const boost::system::error_code &err);
 
   EXPORT virtual void onNetworkError(const boost::system::error_code &err) = 0;
   EXPORT virtual void onNewMessage(io &i, const NetworkMessage_ptr &d, bool &cancel) = 0;

@@ -6,7 +6,7 @@
 
 namespace dqueue {
 
-struct AbstractClient {
+struct AbstractClient: public std::enable_shared_from_this<AbstractClient> {
   struct Params {
     std::string host;
     unsigned short port;

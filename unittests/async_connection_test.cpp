@@ -27,6 +27,14 @@ struct testable_client:public abstract_client {
 	~testable_client() {
 	}
 
+	void onConnect() {
+		logger_info("client: send hello ");
+
+		auto nd = std::make_shared<network_message>(1);
+
+		this->_async_connection->send(nd);
+	}
+
 	void onNewMessage(const network_message_ptr &d, bool & /*cancel*/) override{
 		auto qh = reinterpret_cast<message_header *>(d->data);
 

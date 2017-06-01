@@ -16,6 +16,7 @@ abstract_client::~abstract_client() {
 
 void abstract_client::onNetworkError(const boost::system::error_code &err) {
   THROW_EXCEPTION("error on - ", err.message());
+  isConnected = false;
 }
 
 void abstract_client::connectTo(const std::string &host, const std::string &port) {
@@ -45,12 +46,8 @@ void abstract_client::connectTo(const std::string &host, const std::string &port
       THROW_EXCEPTION("dqueue::client: error on connect - ", msg);
     }
     this->_async_connection->start(this->_socket);
-
-    logger_info("client: send hello ");
-
-    auto nd = std::make_shared<network_message>(1);
-
-    this->_async_connection->send(nd);
+	isConnected = true;
+	this->onConnect();
   });
 }
 

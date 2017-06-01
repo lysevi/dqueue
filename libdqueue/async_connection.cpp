@@ -8,7 +8,7 @@ using namespace boost::asio;
 
 using namespace dqueue;
 
-async_connection::async_connection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr) {
+AsyncConnection::AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr) {
   _async_con_id = 0;
   _messages_to_send = 0;
   _is_stoped = true;
@@ -16,11 +16,11 @@ async_connection::async_connection(onDataRecvHandler onRecv, onNetworkErrorHandl
   _on_error_handler = onErr;
 }
 
-async_connection::~async_connection() noexcept(false) {
+AsyncConnection::~AsyncConnection() noexcept(false) {
   full_stop();
 }
 
-void async_connection::start(const socket_ptr &sock) {
+void AsyncConnection::start(const socket_ptr &sock) {
   if (!_is_stoped) {
     return;
   }
@@ -30,12 +30,12 @@ void async_connection::start(const socket_ptr &sock) {
   readNextAsync();
 }
 
-void async_connection::mark_stoped() {
+void AsyncConnection::mark_stoped() {
   _begin_stoping_flag = true;
 }
 
-void async_connection::full_stop() {
-  mark_stoped();
+void AsyncConnection::full_stop() {
+  // mark_stoped();
   try {
     if (auto spt = _sock.lock()) {
       if (spt->is_open()) {
@@ -46,7 +46,7 @@ void async_connection::full_stop() {
   }
 }
 
-void async_connection::send(const network_message_ptr &d) {
+void AsyncConnection::send(const NetworkMessage_ptr &d) {
   if (!_begin_stoping_flag) {
     auto ptr = shared_from_this();
 
@@ -58,29 +58,30 @@ void async_connection::send(const network_message_ptr &d) {
       _messages_to_send++;
       auto buf = buffer(send_buffer, send_buffer_size);
       async_write(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
-        ptr->_messages_to_send--;
-        assert(ptr->_messages_to_send >= 0);
         if (err) {
           ptr->_on_error_handler(err);
+        } else {
+          ptr->_messages_to_send--;
+          assert(ptr->_messages_to_send >= 0);
         }
       });
     }
   }
 }
 
-void async_connection::readNextAsync() {
+void AsyncConnection::readNextAsync() {
   if (auto spt = _sock.lock()) {
     auto ptr = shared_from_this();
-	network_message_ptr d = std::make_shared<network_message>();
+    NetworkMessage_ptr d = std::make_shared<NetworkMessage>();
 
     async_read(*spt.get(), buffer((uint8_t *)(&d->size), SIZE_OF_MESSAGE_SIZE),
                [ptr, d, spt](auto err, auto read_bytes) {
                  if (err) {
-                   if (err == boost::asio::error::operation_aborted ||
+                   /*if (err == boost::asio::error::operation_aborted ||
                        err == boost::asio::error::connection_reset ||
                        err == boost::asio::error::eof) {
                      return;
-                   }
+                   }*/
                    ptr->_on_error_handler(err);
                  } else {
                    if (read_bytes != SIZE_OF_MESSAGE_SIZE) {

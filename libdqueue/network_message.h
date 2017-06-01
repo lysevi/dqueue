@@ -6,7 +6,7 @@
 namespace dqueue {
 #pragma pack(push, 1)
 
-struct network_message {
+struct NetworkMessage {
   using message_size = uint16_t;
   using message_kind = uint16_t;
 
@@ -15,21 +15,20 @@ struct network_message {
   message_size size;
   uint8_t data[MAX_MESSAGE_SIZE];
 
-  EXPORT network_message();
-  EXPORT network_message(const message_kind &kind);
-  EXPORT ~network_message();
+  EXPORT NetworkMessage();
+  EXPORT NetworkMessage(const message_kind &kind);
+  EXPORT ~NetworkMessage();
 
   EXPORT std::tuple<message_size, uint8_t *> as_buffer();
 };
 
 struct message_header {
-  network_message::message_kind kind;
+  NetworkMessage::message_kind kind;
 };
 
 #pragma pack(pop)
 
-using network_message_ptr = std::shared_ptr<network_message>;
+using NetworkMessage_ptr = std::shared_ptr<NetworkMessage>;
 
-const size_t SIZE_OF_MESSAGE_SIZE = sizeof(network_message::message_size);
-
+const size_t SIZE_OF_MESSAGE_SIZE = sizeof(NetworkMessage::message_size);
 }

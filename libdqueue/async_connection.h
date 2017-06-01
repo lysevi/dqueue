@@ -9,17 +9,18 @@
 #include <memory>
 
 namespace dqueue {
-class async_connection : public std::enable_shared_from_this<async_connection> {
+class AsyncConnection : public std::enable_shared_from_this<AsyncConnection> {
 public:
   /// if method set 'cancel' to true, then read loop stoping.
   /// if dont_free_memory, then free NetData_ptr is in client side.
-  using onDataRecvHandler = std::function<void(const network_message_ptr &d, bool &cancel)>;
+  using onDataRecvHandler =
+      std::function<void(const NetworkMessage_ptr &d, bool &cancel)>;
   using onNetworkErrorHandler = std::function<void(const boost::system::error_code &err)>;
 
 public:
-  EXPORT async_connection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr);
-  EXPORT ~async_connection() noexcept(false);
-  EXPORT void send(const network_message_ptr &d);
+  EXPORT AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr);
+  EXPORT ~AsyncConnection() noexcept(false);
+  EXPORT void send(const NetworkMessage_ptr &d);
   EXPORT void start(const socket_ptr &sock);
   EXPORT void mark_stoped();
   EXPORT void full_stop(); /// stop thread, clean queue

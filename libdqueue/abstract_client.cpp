@@ -25,7 +25,7 @@ void AbstractClient::disconnect() {
 }
 
 void AbstractClient::reconnectOnError(const NetworkMessage_ptr &d,
-                                  const boost::system::error_code &err) {
+                                      const boost::system::error_code &err) {
   isConnected = false;
   onNetworkError(d, err);
   if (!isStoped && _params.auto_reconnection) {
@@ -34,23 +34,22 @@ void AbstractClient::reconnectOnError(const NetworkMessage_ptr &d,
 }
 
 void AbstractClient::async_connect() {
-  boost::asio::ip::tcp::resolver resolver(*_service);
+  using namespace boost::asio::ip;
+  tcp::resolver resolver(*_service);
+  tcp::resolver::query query(_params.host, std::to_string(_params.port),
+                             tcp::resolver::query::canonical_name);
+  tcp::resolver::iterator iter = resolver.resolve(query);
 
-  boost::asio::ip::tcp::resolver::query query(
-      _params.host, std::to_string(_params.port),
-      boost::asio::ip::tcp::resolver::query::canonical_name);
-  boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
-
-  for (; iter != boost::asio::ip::tcp::resolver::iterator(); ++iter) {
+  for (; iter != tcp::resolver::iterator(); ++iter) {
     auto ep = iter->endpoint();
-    if (ep.protocol() == boost::asio::ip::tcp::v4()) {
+    if (ep.protocol() == tcp::v4()) {
       break;
     }
   }
-  if (iter == boost::asio::ip::tcp::resolver::iterator()) {
+  if (iter == tcp::resolver::iterator()) {
     THROW_EXCEPTION("hostname not found.");
   }
-  boost::asio::ip::tcp::endpoint ep = *iter;
+  tcp::endpoint ep = *iter;
   logger_info("client: ", _params.host, ":", _params.port, " - ",
               ep.address().to_string());
 

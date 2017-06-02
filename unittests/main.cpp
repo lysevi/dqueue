@@ -65,7 +65,6 @@ struct LoggerControl : Catch::TestEventListenerBase {
 CATCH_REGISTER_LISTENER(LoggerControl);
 
 int main(int argc, char **argv) {
-  UnitTestLogger::verbose = true;
   int _argc = argc;
   char **_argv = argv;
   for (int i = 0; i < argc; ++i) {

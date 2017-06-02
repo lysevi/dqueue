@@ -55,14 +55,12 @@ struct AbstractServer : public std::enable_shared_from_this<AbstractServer> {
   std::mutex _locker_connections;
   std::list<std::shared_ptr<io>> _connections;
   params _params;
-  bool is_stoped=false;
+  bool is_stoped = false;
   EXPORT AbstractServer(boost::asio::io_service *service, params p);
   EXPORT virtual ~AbstractServer();
   EXPORT void serverStart();
   EXPORT void stopServer();
   EXPORT void start_accept(socket_ptr sock);
-  EXPORT void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
-                            const boost::system::error_code &err);
 
   EXPORT virtual void onNetworkError(io &i, const NetworkMessage_ptr &d,
                                      const boost::system::error_code &err) = 0;

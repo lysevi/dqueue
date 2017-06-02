@@ -75,7 +75,7 @@ struct testable_server : public AbstractServer {
   testable_server(boost::asio::io_service *service, const AbstractServer::params &p)
       : AbstractServer(service, p) {}
 
-  ~testable_server() {}
+  virtual ~testable_server() { logger("stop testable server"); }
 
   void onNewMessage(AbstractServer::io &io, const NetworkMessage_ptr &d, bool &) {
     auto qh = reinterpret_cast<message_header *>(d->data);
@@ -115,6 +115,7 @@ void server_thread() {
   while (!server_stop) {
     service.poll_one();
   }
+  server->stopServer();
   server = nullptr;
 }
 

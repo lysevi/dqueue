@@ -14,7 +14,7 @@ AbstractServer::AbstractServer(boost::asio::io_service *service, AbstractServer:
 }
 
 AbstractServer::~AbstractServer() {
-  _connections.clear();
+  stopServer();
 }
 
 void AbstractServer::serverStart() {
@@ -26,8 +26,17 @@ void AbstractServer::serverStart() {
 }
 
 void AbstractServer::start_accept(socket_ptr sock) {
-  _acc->async_accept(*sock, std::bind(&AbstractServer::handle_accept,this,
+  _acc->async_accept(*sock, std::bind(&AbstractServer::handle_accept, this,
                                       this->shared_from_this(), sock, _1));
+}
+
+void AbstractServer::stopServer() {
+  if (!is_stoped) {
+    logger("abstract_server::stopServer()");
+    _acc = nullptr;
+    _connections.clear();
+    is_stoped = true;
+  }
 }
 
 void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
@@ -42,11 +51,11 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
   } else {
     logger_info("server: accept connection.");
 
-	this->_locker_connections.lock();
+    this->_locker_connections.lock();
     auto new_client = std::make_shared<io>(self->_next_id, sock, self);
-	this->_next_id++;
-	this->_connections.push_back(new_client);
-	this->_locker_connections.unlock();
+    this->_next_id++;
+    this->_connections.push_back(new_client);
+    this->_locker_connections.unlock();
   }
   socket_ptr new_sock = std::make_shared<boost::asio::ip::tcp::socket>(*self->_service);
   this->start_accept(new_sock);

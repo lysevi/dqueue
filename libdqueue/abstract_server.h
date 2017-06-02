@@ -21,8 +21,8 @@ struct AbstractServer : public std::enable_shared_from_this<AbstractServer> {
     socket_ptr sock = nullptr;
     std::shared_ptr<AsyncConnection> _async_connection = nullptr;
 
-    AbstractServer *_server = nullptr;
-    io(int id_, socket_ptr sock_, AbstractServer *s) : id(id_), sock(sock_), _server(s) {
+    std::shared_ptr<AbstractServer> _server = nullptr;
+    io(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s) : id(id_), sock(sock_), _server(s) {
 
       AsyncConnection::onDataRecvHandler on_d = [this](
           const NetworkMessage_ptr &d, bool &cancel) { this->onDataRecv(d, cancel); };
@@ -61,7 +61,7 @@ struct AbstractServer : public std::enable_shared_from_this<AbstractServer> {
   EXPORT void serverStart();
 
   EXPORT void start_accept(socket_ptr sock);
-  EXPORT static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
+  EXPORT void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                                    const boost::system::error_code &err);
 
   EXPORT virtual void onNetworkError(io &i, const NetworkMessage_ptr &d,

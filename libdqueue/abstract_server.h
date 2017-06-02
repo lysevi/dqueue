@@ -61,7 +61,7 @@ struct AbstractServer : public std::enable_shared_from_this<AbstractServer> {
   EXPORT void serverStart();
 
   EXPORT void start_accept(socket_ptr sock);
-  EXPORT static void handle_accept(std::shared_ptr<AbstractServer> &self, socket_ptr sock,
+  EXPORT static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                                    const boost::system::error_code &err);
 
   EXPORT virtual void onNetworkError(io &i, const NetworkMessage_ptr &d,

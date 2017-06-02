@@ -30,7 +30,7 @@ void AbstractServer::start_accept(socket_ptr sock) {
                                       this->shared_from_this(), sock, _1));
 }
 
-void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> &self, socket_ptr sock,
+void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                                    const boost::system::error_code &err) {
   if (err) {
     if (err == boost::asio::error::operation_aborted ||

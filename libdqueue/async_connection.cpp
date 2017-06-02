@@ -74,39 +74,39 @@ void AsyncConnection::readNextAsync() {
     auto ptr = shared_from_this();
     NetworkMessage_ptr d = std::make_shared<NetworkMessage>();
 
-    auto on_read_data = [ptr, d](auto err, auto /*read_bytes*/) {
-      if (err) {
-        ptr->_on_error_handler(d, err);
-      } else {
-        bool cancel_flag = false;
-        try {
-          ptr->_on_recv_hadler(d, cancel_flag);
-        } catch (std::exception &ex) {
-          THROW_EXCEPTION("exception on async readData. #", ptr->_async_con_id, " - ",
-                          ex.what());
-        }
+	async_read(*spt.get(), buffer((uint8_t *)(&d->size), SIZE_OF_MESSAGE_SIZE),
+		[ptr, d, spt](auto err, auto read_bytes) {
+		if (err) {
+			ptr->_on_error_handler(d, err);
+		}
+		else {
+			if (read_bytes != SIZE_OF_MESSAGE_SIZE) {
+				THROW_EXCEPTION("exception on async readMarker. #",
+					ptr->_async_con_id,
+					" - wrong marker size: expected ",
+					SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
+			}
+			auto buf = buffer((uint8_t *)(&d->data), d->size);
+			async_read(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
+				if (err) {
+					ptr->_on_error_handler(d, err);
+				}
+				else {
+					bool cancel_flag = false;
+					try {
+						ptr->_on_recv_hadler(d, cancel_flag);
+					}
+					catch (std::exception &ex) {
+						THROW_EXCEPTION("exception on async readData. #",
+							ptr->_async_con_id, " - ", ex.what());
+					}
 
-        if (!cancel_flag) {
-          ptr->readNextAsync();
-        }
-      }
-    };
-
-    auto on_read_marker = [ptr, d, spt, on_read_data](auto err, auto read_bytes) {
-      if (err) {
-        ptr->_on_error_handler(d, err);
-      } else {
-        if (read_bytes != SIZE_OF_MESSAGE_SIZE) {
-          THROW_EXCEPTION("exception on async readMarker. #", ptr->_async_con_id,
-                          " - wrong marker size: expected ", SIZE_OF_MESSAGE_SIZE,
-                          " readed ", read_bytes);
-        }
-        auto buf = buffer((uint8_t *)(&d->data), d->size);
-        async_read(*spt.get(), buf, on_read_data);
-      }
-    };
-
-    async_read(*spt.get(), buffer((uint8_t *)(&d->size), SIZE_OF_MESSAGE_SIZE),
-               on_read_marker);
+					if (!cancel_flag) {
+						ptr->readNextAsync();
+					}
+				}
+			});
+		}
+	});
   }
 }

@@ -58,9 +58,8 @@ struct testable_server : public AbstractServer {
   std::mutex _locker;
 
   bool all_id_gt(size_t v) {
-    _locker.lock();
+    std::lock_guard<std::mutex> lg(_locker);
     if (id2count.empty()) {
-      _locker.unlock();
       return false;
     }
     bool result = true;
@@ -70,7 +69,6 @@ struct testable_server : public AbstractServer {
         break;
       }
     }
-    _locker.unlock();
     return result;
   }
 
@@ -85,14 +83,13 @@ struct testable_server : public AbstractServer {
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
     case 1: {
-      _locker.lock();
+      std::lock_guard<std::mutex> lg(_locker);
       auto fres = id2count.find(io.id);
       if (fres == id2count.end()) {
         id2count[io.id] = size_t();
       } else {
         fres->second += 1;
       }
-      _locker.unlock();
       io._async_connection->send(d);
       break;
     }

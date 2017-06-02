@@ -8,7 +8,7 @@ AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &p
     this->dataRecv(d, cancel);
   };
   AsyncConnection::onNetworkErrorHandler on_n = [this](auto d, auto err) {
-    this->networkError(d, err);
+    this->reconnectOnError(d, err);
   };
   _async_connection = std::make_shared<AsyncConnection>(on_d, on_n);
 }
@@ -24,7 +24,7 @@ void AbstractClient::disconnect() {
   }
 }
 
-void AbstractClient::networkError(const NetworkMessage_ptr &d,
+void AbstractClient::reconnectOnError(const NetworkMessage_ptr &d,
                                   const boost::system::error_code &err) {
   isConnected = false;
   onNetworkError(d, err);
@@ -58,7 +58,7 @@ void AbstractClient::async_connect() {
   auto self = this->shared_from_this();
   _socket->async_connect(ep, [self](auto ec) {
     if (ec) {
-      self->onNetworkError(nullptr, ec);
+      self->reconnectOnError(nullptr, ec);
     } else {
       self->_async_connection->start(self->_socket);
       self->isConnected = true;

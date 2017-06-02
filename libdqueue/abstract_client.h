@@ -24,9 +24,10 @@ struct AbstractClient : public std::enable_shared_from_this<AbstractClient> {
   EXPORT virtual ~AbstractClient();
   EXPORT void disconnect();
   EXPORT void async_connect();
-  EXPORT void networkError(const NetworkMessage_ptr &d,
+  EXPORT void reconnectOnError(const NetworkMessage_ptr &d,
                            const boost::system::error_code &err);
   EXPORT void dataRecv(const NetworkMessage_ptr &d, bool &cancel);
+  
   virtual void onConnect() = 0;
   virtual void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) = 0;
   virtual void onNetworkError(const NetworkMessage_ptr &d,

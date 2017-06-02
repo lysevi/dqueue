@@ -24,10 +24,10 @@ struct AbstractServer : public std::enable_shared_from_this<AbstractServer> {
     AbstractServer *_server = nullptr;
     io(int id_, socket_ptr sock_, AbstractServer *s) : id(id_), sock(sock_), _server(s) {
 
-      AsyncConnection::onDataRecvHandler on_d =
-          [this](const NetworkMessage_ptr &d, bool &cancel) { onDataRecv(d, cancel); };
+      AsyncConnection::onDataRecvHandler on_d = [this](
+          const NetworkMessage_ptr &d, bool &cancel) { this->onDataRecv(d, cancel); };
       AsyncConnection::onNetworkErrorHandler on_n = [this](auto d, auto err) {
-        onNetworkError(d, err);
+        this->onNetworkError(d, err);
       };
 
       _async_connection = std::make_shared<AsyncConnection>(on_d, on_n);

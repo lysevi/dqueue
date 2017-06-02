@@ -6,7 +6,7 @@
 
 namespace dqueue {
 
-struct AbstractClient: public std::enable_shared_from_this<AbstractClient> {
+struct AbstractClient : public std::enable_shared_from_this<AbstractClient> {
   struct Params {
     std::string host;
     unsigned short port;
@@ -24,9 +24,12 @@ struct AbstractClient: public std::enable_shared_from_this<AbstractClient> {
   EXPORT virtual ~AbstractClient();
   EXPORT void disconnect();
   EXPORT void async_connect();
-  EXPORT void onNetworkError(const boost::system::error_code &err);
-  EXPORT void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
+  EXPORT void networkError(const NetworkMessage_ptr &d,
+                           const boost::system::error_code &err);
+  EXPORT void dataRecv(const NetworkMessage_ptr &d, bool &cancel);
   virtual void onConnect() = 0;
   virtual void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) = 0;
+  virtual void onNetworkError(const NetworkMessage_ptr &d,
+                              const boost::system::error_code &err) = 0;
 };
 }

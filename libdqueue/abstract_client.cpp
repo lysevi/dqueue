@@ -4,10 +4,12 @@ using namespace dqueue;
 
 AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &params)
     : _service(service), _params(params) {
-  AsyncConnection::onDataRecvHandler on_d =
-      [this](const NetworkMessage_ptr &d, bool &cancel) { this->onDataRecv(d, cancel); };
-  AsyncConnection::onNetworkErrorHandler on_n =
-      [this](const boost::system::error_code &err) { this->onNetworkError(err); };
+  AsyncConnection::onDataRecvHandler on_d = [this](auto d, auto cancel) {
+    this->dataRecv(d, cancel);
+  };
+  AsyncConnection::onNetworkErrorHandler on_n = [this](auto d, auto err) {
+    this->networkError(d, err);
+  };
   _async_connection = std::make_shared<AsyncConnection>(on_d, on_n);
 }
 
@@ -22,8 +24,10 @@ void AbstractClient::disconnect() {
   }
 }
 
-void AbstractClient::onNetworkError(const boost::system::error_code &err) {
+void AbstractClient::networkError(const NetworkMessage_ptr &d,
+                                  const boost::system::error_code &err) {
   isConnected = false;
+  onNetworkError(d, err);
   if (!isStoped && _params.auto_reconnection) {
     this->async_connect();
   }
@@ -54,15 +58,15 @@ void AbstractClient::async_connect() {
   auto self = this->shared_from_this();
   _socket->async_connect(ep, [self](auto ec) {
     if (ec) {
-		self->onNetworkError(ec);
+      self->onNetworkError(nullptr, ec);
     } else {
-		self->_async_connection->start(self->_socket);
-		self->isConnected = true;
-		self->onConnect();
+      self->_async_connection->start(self->_socket);
+      self->isConnected = true;
+      self->onConnect();
     }
   });
 }
 
-void AbstractClient::onDataRecv(const NetworkMessage_ptr &d, bool &cancel) {
+void AbstractClient::dataRecv(const NetworkMessage_ptr &d, bool &cancel) {
   onNewMessage(d, cancel);
 }

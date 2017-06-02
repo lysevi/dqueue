@@ -59,7 +59,7 @@ void AsyncConnection::send(const NetworkMessage_ptr &d) {
       auto buf = buffer(send_buffer, send_buffer_size);
       async_write(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
         if (err) {
-          ptr->_on_error_handler(err);
+          ptr->_on_error_handler(d, err);
         } else {
           ptr->_messages_to_send--;
           assert(ptr->_messages_to_send >= 0);
@@ -74,44 +74,39 @@ void AsyncConnection::readNextAsync() {
     auto ptr = shared_from_this();
     NetworkMessage_ptr d = std::make_shared<NetworkMessage>();
 
-    async_read(*spt.get(), buffer((uint8_t *)(&d->size), SIZE_OF_MESSAGE_SIZE),
-               [ptr, d, spt](auto err, auto read_bytes) {
-                 if (err) {
-                   /*if (err == boost::asio::error::operation_aborted ||
-                       err == boost::asio::error::connection_reset ||
-                       err == boost::asio::error::eof) {
-                     return;
-                   }*/
-                   ptr->_on_error_handler(err);
-                 } else {
-                   if (read_bytes != SIZE_OF_MESSAGE_SIZE) {
-                     THROW_EXCEPTION("exception on async readMarker. #",
-                                     ptr->_async_con_id,
-                                     " - wrong marker size: expected ",
-                                     SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
-                   }
-                   auto buf = buffer((uint8_t *)(&d->data), d->size);
-                   async_read(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
-                     // logger("AsyncConnection::onReadData #", _async_con_id,
-                     // "
-                     // readed ", read_bytes);
-                     if (err) {
-                       ptr->_on_error_handler(err);
-                     } else {
-                       bool cancel_flag = false;
-                       try {
-                         ptr->_on_recv_hadler(d, cancel_flag);
-                       } catch (std::exception &ex) {
-                         THROW_EXCEPTION("exception on async readData. #",
-                                         ptr->_async_con_id, " - ", ex.what());
-                       }
+    auto on_read_data = [ptr, d](auto err, auto /*read_bytes*/) {
+      if (err) {
+        ptr->_on_error_handler(d, err);
+      } else {
+        bool cancel_flag = false;
+        try {
+          ptr->_on_recv_hadler(d, cancel_flag);
+        } catch (std::exception &ex) {
+          THROW_EXCEPTION("exception on async readData. #", ptr->_async_con_id, " - ",
+                          ex.what());
+        }
 
-                       if (!cancel_flag) {
-                         ptr->readNextAsync();
-                       }
-                     }
-                   });
-                 }
-               });
+        if (!cancel_flag) {
+          ptr->readNextAsync();
+        }
+      }
+    };
+
+    auto on_read_marker = [ptr, d, spt, on_read_data](auto err, auto read_bytes) {
+      if (err) {
+        ptr->_on_error_handler(d, err);
+      } else {
+        if (read_bytes != SIZE_OF_MESSAGE_SIZE) {
+          THROW_EXCEPTION("exception on async readMarker. #", ptr->_async_con_id,
+                          " - wrong marker size: expected ", SIZE_OF_MESSAGE_SIZE,
+                          " readed ", read_bytes);
+        }
+        auto buf = buffer((uint8_t *)(&d->data), d->size);
+        async_read(*spt.get(), buf, on_read_data);
+      }
+    };
+
+    async_read(*spt.get(), buffer((uint8_t *)(&d->size), SIZE_OF_MESSAGE_SIZE),
+               on_read_marker);
   }
 }

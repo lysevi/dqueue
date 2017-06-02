@@ -15,7 +15,8 @@ public:
   /// if dont_free_memory, then free NetData_ptr is in client side.
   using onDataRecvHandler =
       std::function<void(const NetworkMessage_ptr &d, bool &cancel)>;
-  using onNetworkErrorHandler = std::function<void(const boost::system::error_code &err)>;
+  using onNetworkErrorHandler = std::function<void(const NetworkMessage_ptr &d,
+                                                   const boost::system::error_code &err)>;
 
 public:
   EXPORT AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr);

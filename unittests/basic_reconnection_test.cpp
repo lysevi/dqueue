@@ -1,7 +1,7 @@
 #include "helpers.h"
 #include <libdqueue/abstract_client.h>
 #include <libdqueue/abstract_server.h>
-#include <libdqueue/async_connection.h>
+#include <libdqueue/async_io.h>
 #include <libdqueue/utils/logger.h>
 #include <catch.hpp>
 
@@ -35,9 +35,7 @@ struct testable_client : public AbstractClient {
   }
 
   bool success = false;
-  void onMessageSended(const NetworkMessage_ptr &d) override {
-	  success = true;
-  }
+  void onMessageSended(const NetworkMessage_ptr &) override { success = true; }
 
   virtual void onNetworkError(const NetworkMessage_ptr &,
                               const boost::system::error_code &) override {}
@@ -83,24 +81,26 @@ struct testable_server : public AbstractServer {
 
   virtual ~testable_server() { logger("stop testable server"); }
   bool success = false;
-  void onMessageSended(AbstractServer::io &i, const NetworkMessage_ptr &d) override{
-	  success = true;
+  void onMessageSended(AbstractServer::ClientConnection &,
+                       const NetworkMessage_ptr &) override {
+    success = true;
   }
 
-  void onNewMessage(AbstractServer::io &io, const NetworkMessage_ptr &d, bool &) {
+  void onNewMessage(AbstractServer::ClientConnection &ClientConnection,
+                    const NetworkMessage_ptr &d, bool &) {
     auto qh = reinterpret_cast<message_header *>(d->data);
 
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
     case 1: {
       std::lock_guard<std::mutex> lg(_locker);
-      auto fres = id2count.find(io.id);
+      auto fres = id2count.find(ClientConnection.get_id());
       if (fres == id2count.end()) {
-        id2count[io.id] = size_t();
+        id2count[ClientConnection.get_id()] = size_t();
       } else {
         fres->second += 1;
       }
-      io._async_connection->send(d);
+      ClientConnection.sendData(d);
       break;
     }
     default:
@@ -109,7 +109,7 @@ struct testable_server : public AbstractServer {
     }
   }
 
-  void onNetworkError(io &, const NetworkMessage_ptr &,
+  void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
 };
 
@@ -141,16 +141,14 @@ void testForReconnection(const size_t clients_count) {
   }
   server_stop = false;
   std::thread t(server_thread);
-  while (server == nullptr || !server->is_started) {
+  while (server == nullptr || !server->is_started()) {
     logger_info("!server->is_started serverIsNull? ", server == nullptr);
     service.poll_one();
   }
 
- 
-
   for (auto &c : clients) {
-	
-    while (!c->isConnected) {
+
+    while (!c->is_connected()) {
       logger_info("client not connected");
       service.poll_one();
     }
@@ -169,8 +167,8 @@ void testForReconnection(const size_t clients_count) {
   t.join();
 
   for (auto &c : clients) {
-	  EXPECT_TRUE(c->success);
-    while (c->isConnected) {
+    EXPECT_TRUE(c->success);
+    while (c->is_connected()) {
       logger_info("client is still connected");
       service.poll_one();
     }
@@ -180,7 +178,7 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   t = std::thread(server_thread);
   for (auto &c : clients) {
-    while (!c->isConnected && (server == nullptr || !server->is_started)) {
+    while (!c->is_connected() && (server == nullptr || !server->is_started())) {
       logger_info("client and server is not connected");
       service.poll_one();
     }
@@ -191,7 +189,7 @@ void testForReconnection(const size_t clients_count) {
     c->disconnect();
   }
   for (auto &c : clients) {
-    while (c->isConnected) {
+    while (c->is_connected()) {
       logger_info("client is still connected");
       service.poll_one();
     }

@@ -4,17 +4,17 @@ using namespace dqueue;
 
 AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &params)
     : _service(service), _params(params) {
-  AsyncConnection::onDataRecvHandler on_d = [this](auto d, auto cancel) {
+  AsyncIO::onDataRecvHandler on_d = [this](auto d, auto cancel) {
     this->dataRecv(d, cancel);
   };
-  AsyncConnection::onNetworkErrorHandler on_n = [this](auto d, auto err) {
+  AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
     this->reconnectOnError(d, err);
   };
 
-  AsyncConnection::onNetworkSuccessSendHandler on_s = [this](auto d) {
-	  this->onMessageSended(d);
+  AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
+    this->onMessageSended(d);
   };
-  _async_connection = std::make_shared<AsyncConnection>(on_d, on_n, on_s);
+  _async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
 }
 
 AbstractClient::~AbstractClient() {

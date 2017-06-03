@@ -1,4 +1,4 @@
-#include <libdqueue/async_connection.h>
+#include <libdqueue/async_io.h>
 #include <libdqueue/utils/exception.h>
 #include <functional>
 
@@ -8,7 +8,8 @@ using namespace boost::asio;
 
 using namespace dqueue;
 
-AsyncConnection::AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr, onNetworkSuccessSendHandler onSended) {
+AsyncIO::AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr,
+                 onNetworkSuccessSendHandler onSended) {
   _async_con_id = 0;
   _messages_to_send = 0;
   _is_stoped = true;
@@ -17,11 +18,11 @@ AsyncConnection::AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler
   _on_sended_handler = onSended;
 }
 
-AsyncConnection::~AsyncConnection() noexcept(false) {
+AsyncIO::~AsyncIO() noexcept(false) {
   full_stop();
 }
 
-void AsyncConnection::start(const socket_ptr &sock) {
+void AsyncIO::start(const socket_ptr &sock) {
   if (!_is_stoped) {
     return;
   }
@@ -31,11 +32,11 @@ void AsyncConnection::start(const socket_ptr &sock) {
   readNextAsync();
 }
 
-void AsyncConnection::mark_stoped() {
+void AsyncIO::mark_stoped() {
   _begin_stoping_flag = true;
 }
 
-void AsyncConnection::full_stop() {
+void AsyncIO::full_stop() {
   // mark_stoped();
   try {
     if (auto spt = _sock.lock()) {
@@ -47,7 +48,7 @@ void AsyncConnection::full_stop() {
   }
 }
 
-void AsyncConnection::send(const NetworkMessage_ptr &d) {
+void AsyncIO::send(const NetworkMessage_ptr &d) {
   if (!_begin_stoping_flag) {
     auto ptr = shared_from_this();
 
@@ -64,14 +65,14 @@ void AsyncConnection::send(const NetworkMessage_ptr &d) {
         } else {
           ptr->_messages_to_send--;
           assert(ptr->_messages_to_send >= 0);
-		  ptr->_on_sended_handler(d);
+          ptr->_on_sended_handler(d);
         }
       });
     }
   }
 }
 
-void AsyncConnection::readNextAsync() {
+void AsyncIO::readNextAsync() {
   if (auto spt = _sock.lock()) {
     auto ptr = shared_from_this();
     NetworkMessage_ptr d = std::make_shared<NetworkMessage>();

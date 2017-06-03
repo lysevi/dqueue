@@ -17,9 +17,9 @@ public:
       std::function<void(const NetworkMessage_ptr &d, bool &cancel)>;
   using onNetworkErrorHandler = std::function<void(const NetworkMessage_ptr &d,
                                                    const boost::system::error_code &err)>;
-
+  using onNetworkSuccessSendHandler = std::function<void(const NetworkMessage_ptr &d)>;
 public:
-  EXPORT AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr);
+  EXPORT AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr, onNetworkSuccessSendHandler onSended);
   EXPORT ~AsyncConnection() noexcept(false);
   EXPORT void send(const NetworkMessage_ptr &d);
   EXPORT void start(const socket_ptr &sock);
@@ -43,5 +43,6 @@ private:
 
   onDataRecvHandler _on_recv_hadler;
   onNetworkErrorHandler _on_error_handler;
+  onNetworkSuccessSendHandler _on_sended_handler;
 };
 }

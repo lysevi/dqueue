@@ -8,12 +8,13 @@ using namespace boost::asio;
 
 using namespace dqueue;
 
-AsyncConnection::AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr) {
+AsyncConnection::AsyncConnection(onDataRecvHandler onRecv, onNetworkErrorHandler onErr, onNetworkSuccessSendHandler onSended) {
   _async_con_id = 0;
   _messages_to_send = 0;
   _is_stoped = true;
   _on_recv_hadler = onRecv;
   _on_error_handler = onErr;
+  _on_sended_handler = onSended;
 }
 
 AsyncConnection::~AsyncConnection() noexcept(false) {
@@ -63,6 +64,7 @@ void AsyncConnection::send(const NetworkMessage_ptr &d) {
         } else {
           ptr->_messages_to_send--;
           assert(ptr->_messages_to_send >= 0);
+		  ptr->_on_sended_handler(d);
         }
       });
     }

@@ -10,7 +10,11 @@ AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &p
   AsyncConnection::onNetworkErrorHandler on_n = [this](auto d, auto err) {
     this->reconnectOnError(d, err);
   };
-  _async_connection = std::make_shared<AsyncConnection>(on_d, on_n);
+
+  AsyncConnection::onNetworkSuccessSendHandler on_s = [this](auto d) {
+	  this->onMessageSended(d);
+  };
+  _async_connection = std::make_shared<AsyncConnection>(on_d, on_n, on_s);
 }
 
 AbstractClient::~AbstractClient() {

@@ -2,6 +2,7 @@
 
 #include <libdqueue/exports.h>
 #include <libdqueue/utils/async/locker.h>
+#include <cstring>
 
 namespace dqueue {
 #pragma pack(push, 1)

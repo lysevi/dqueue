@@ -19,7 +19,6 @@ public:
                                                    const boost::system::error_code &err)>;
   using onNetworkSuccessSendHandler = std::function<void(const NetworkMessage_ptr &d)>;
 
-public:
   EXPORT AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr,
                  onNetworkSuccessSendHandler onSended);
   EXPORT ~AsyncIO() noexcept(false);
@@ -28,7 +27,7 @@ public:
   EXPORT void mark_stoped();
   EXPORT void full_stop(); /// stop thread, clean queue
 
-  void set_id(int id) { _async_con_id = id; }
+  void set_id(int id) { _async_con_id = id; } /// need to debug output;
   int id() const { return _async_con_id; }
   int queue_size() const { return _messages_to_send; }
 
@@ -37,7 +36,7 @@ private:
 
 private:
   std::atomic_int _messages_to_send;
-  int _async_con_id;
+  int _async_con_id; //need to debug output;
   socket_weak _sock;
 
   bool _is_stoped;

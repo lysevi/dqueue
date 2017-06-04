@@ -41,7 +41,7 @@ struct testable_client : public AbstractClient {
                               const boost::system::error_code &) override {}
 
   void onNewMessage(const NetworkMessage_ptr &d, bool & /*cancel*/) override {
-    auto qh = reinterpret_cast<message_header *>(d->data);
+	auto qh = d->cast_to_header();
 
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
@@ -88,7 +88,7 @@ struct testable_server : public AbstractServer {
 
   void onNewMessage(AbstractServer::ClientConnection &ClientConnection,
                     const NetworkMessage_ptr &d, bool &) {
-    auto qh = reinterpret_cast<message_header *>(d->data);
+    auto qh = d->cast_to_header();
 
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
@@ -147,7 +147,6 @@ void testForReconnection(const size_t clients_count) {
   }
 
   for (auto &c : clients) {
-
     while (!c->is_connected()) {
       logger_info("client not connected");
       service.poll_one();

@@ -11,11 +11,11 @@ struct NetworkMessage {
   using message_kind = uint16_t;
 
   struct message_header {
-	  NetworkMessage::message_kind kind;
+	  message_kind kind;
   };
 
   static const size_t MAX_MESSAGE_SIZE = std::numeric_limits<message_size>::max();
-  static const size_t SIZE_OF_MESSAGE_SIZE = sizeof(NetworkMessage::message_size);
+  static const size_t SIZE_OF_MESSAGE_SIZE = sizeof(message_size);
   static const size_t MAX_BUFFER_SIZE = MAX_MESSAGE_SIZE - sizeof(message_header);
   
   message_size size;
@@ -34,7 +34,7 @@ struct NetworkMessage {
 
   ~NetworkMessage() {}
 
-  std::tuple<NetworkMessage::message_size, uint8_t *> NetworkMessage::as_buffer() {
+  std::tuple<message_size, uint8_t *> as_buffer() {
 	  uint8_t *v = reinterpret_cast<uint8_t *>(this);
 	  auto buf_size = static_cast<message_size>(SIZE_OF_MESSAGE_SIZE + size);
 	  return std::tie(buf_size, v);

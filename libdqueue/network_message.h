@@ -21,18 +21,18 @@ struct NetworkMessage {
   message_size size;
   uint8_t data[MAX_MESSAGE_SIZE];
 
-  NetworkMessage::NetworkMessage() {
+  NetworkMessage() {
 	  memset(data, 0, MAX_MESSAGE_SIZE);
 	  size = 0;
   }
 
-  NetworkMessage::NetworkMessage(const message_kind &kind_) {
+  NetworkMessage(const message_kind &kind_) {
 	  memset(data, 0, MAX_MESSAGE_SIZE);
 	  size = sizeof(kind_);
 	  cast_to_header()->kind = kind_;
   }
 
-  NetworkMessage::~NetworkMessage() {}
+  ~NetworkMessage() {}
 
   std::tuple<NetworkMessage::message_size, uint8_t *> NetworkMessage::as_buffer() {
 	  uint8_t *v = reinterpret_cast<uint8_t *>(this);

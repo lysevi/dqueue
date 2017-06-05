@@ -111,6 +111,10 @@ struct testable_server : public AbstractServer {
 
   void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
+
+  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &)override {
+	  return ON_NEW_CONNECTION_RESULT::ACCEPT;
+  }
 };
 
 bool server_stop = false;

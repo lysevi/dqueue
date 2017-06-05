@@ -12,6 +12,11 @@ public:
     unsigned short port;
   };
 
+  enum class ON_NEW_CONNECTION_RESULT {
+	  ACCEPT,
+	  DISCONNECT
+  };
+
   class ClientConnection {
   public:
     ClientConnection(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
@@ -35,14 +40,15 @@ public:
   EXPORT void serverStart();
   EXPORT void stopServer();
   EXPORT void start_accept(socket_ptr sock);
-  virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
-  EXPORT virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
-                                     const boost::system::error_code &err) = 0;
-  EXPORT virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
-                                   bool &cancel) = 0;
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
 
+  virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
+  virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
+	  const boost::system::error_code &err) = 0;
+  virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
+	  bool &cancel) = 0;
+  virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) = 0;
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);

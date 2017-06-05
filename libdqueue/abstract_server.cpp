@@ -88,18 +88,18 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
     }
   } else {
     logger_info("server: accept connection.");
-	std::shared_ptr<ClientConnection> new_client=nullptr;
-	{
-		std::lock_guard<std::mutex> lg(self->_locker_connections);
-		new_client =
-			std::make_shared<AbstractServer::ClientConnection>(self->_next_id, sock, self);
-		self->_next_id++;
-	}
+    std::shared_ptr<ClientConnection> new_client = nullptr;
+    {
+      std::lock_guard<std::mutex> lg(self->_locker_connections);
+      new_client =
+          std::make_shared<AbstractServer::ClientConnection>(self->_next_id, sock, self);
+      self->_next_id++;
+    }
 
-	if(self->onNewConnection(*new_client.get())== ON_NEW_CONNECTION_RESULT::ACCEPT){
-		std::lock_guard<std::mutex> lg(self->_locker_connections);
-		self->_connections.push_back(new_client);
-	}
+    if (self->onNewConnection(*new_client.get()) == ON_NEW_CONNECTION_RESULT::ACCEPT) {
+      std::lock_guard<std::mutex> lg(self->_locker_connections);
+      self->_connections.push_back(new_client);
+    }
   }
   socket_ptr new_sock = std::make_shared<boost::asio::ip::tcp::socket>(*self->_service);
   self->start_accept(new_sock);

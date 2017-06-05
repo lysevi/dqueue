@@ -101,15 +101,16 @@ void AsyncIO::readNextAsync() {
       } else {
         if (read_bytes != NetworkMessage::SIZE_OF_MESSAGE_SIZE) {
           THROW_EXCEPTION("exception on async readMarker. #", ptr->_async_con_id,
-                          " - wrong marker size: expected ", NetworkMessage::SIZE_OF_MESSAGE_SIZE,
-                          " readed ", read_bytes);
+                          " - wrong marker size: expected ",
+                          NetworkMessage::SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
         }
         auto buf = buffer((uint8_t *)(&d->data), d->size);
         async_read(*spt.get(), buf, on_read_message);
       }
     };
 
-    async_read(*spt.get(), buffer((uint8_t *)(&d->size),  NetworkMessage::SIZE_OF_MESSAGE_SIZE),
+    async_read(*spt.get(),
+               buffer((uint8_t *)(&d->size), NetworkMessage::SIZE_OF_MESSAGE_SIZE),
                on_read_size);
   }
 }

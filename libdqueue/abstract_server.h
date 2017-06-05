@@ -12,10 +12,7 @@ public:
     unsigned short port;
   };
 
-  enum class ON_NEW_CONNECTION_RESULT {
-	  ACCEPT,
-	  DISCONNECT
-  };
+  enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
   class ClientConnection {
   public:
@@ -45,10 +42,11 @@ public:
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
   virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
-	  const boost::system::error_code &err) = 0;
+                              const boost::system::error_code &err) = 0;
   virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
-	  bool &cancel) = 0;
+                            bool &cancel) = 0;
   virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) = 0;
+
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);

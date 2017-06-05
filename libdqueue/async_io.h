@@ -36,7 +36,7 @@ private:
 
 private:
   std::atomic_int _messages_to_send;
-  int _async_con_id; //need to debug output;
+  int _async_con_id; // need to debug output;
   socket_weak _sock;
 
   bool _is_stoped;

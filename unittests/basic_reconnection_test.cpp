@@ -41,7 +41,7 @@ struct testable_client : public AbstractClient {
                               const boost::system::error_code &) override {}
 
   void onNewMessage(const NetworkMessage_ptr &d, bool & /*cancel*/) override {
-	auto qh = d->cast_to_header();
+    auto qh = d->cast_to_header();
 
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
@@ -112,8 +112,8 @@ struct testable_server : public AbstractServer {
   void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
 
-  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &)override {
-	  return ON_NEW_CONNECTION_RESULT::ACCEPT;
+  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &) override {
+    return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 };
 

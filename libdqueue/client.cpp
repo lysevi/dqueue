@@ -2,11 +2,10 @@
 
 using namespace dqueue;
 
-struct Client::Private final : virtual public AbstractClient{
+struct Client::Private final : virtual public AbstractClient {
 
   Private(boost::asio::io_service *service, const AbstractClient::Params &_params)
-      : AbstractClient(service, _params) {
- }
+      : AbstractClient(service, _params) {}
 
   virtual ~Private() {}
 
@@ -28,9 +27,9 @@ Client::~Client() {
 }
 
 void Client::asyncConnect() {
-	_impl->async_connect();
+  _impl->async_connect();
 }
 
 bool Client::is_connected() {
-	return _impl->is_connected();
+  return _impl->is_connected();
 }

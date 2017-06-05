@@ -6,10 +6,10 @@
 using namespace dqueue;
 
 struct Server::Private final : public AbstractServer {
-  Private(boost::asio::io_service *service, AbstractServer::params &p) :AbstractServer(service, p) {
-  }
+  Private(boost::asio::io_service *service, AbstractServer::params &p)
+      : AbstractServer(service, p) {}
 
-virtual ~Private() {}
+  virtual ~Private() {}
 
   void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) {}
 
@@ -19,8 +19,8 @@ virtual ~Private() {}
   void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d, bool &cancel) {}
 
   ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) {
-	  //TODO logic must be implemented in call code
-	  return ON_NEW_CONNECTION_RESULT::ACCEPT;
+    // TODO logic must be implemented in call code
+    return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 };
 
@@ -36,9 +36,9 @@ void Server::serverStart() {
 }
 
 void Server::stopServer() {
-	_impl->stopServer();
+  _impl->stopServer();
 }
 
 bool Server::is_started() {
-	return _impl->is_started();
+  return _impl->is_started();
 }

@@ -18,7 +18,6 @@ using namespace dqueue::utils;
 
 namespace {
 
-
 bool server_stop = false;
 std::shared_ptr<Server> server = nullptr;
 void server_thread() {
@@ -58,7 +57,7 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
- 
+
   server_stop = true;
   while (server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

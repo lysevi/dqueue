@@ -8,14 +8,14 @@ namespace dqueue {
 #pragma pack(push, 1)
 
 struct NetworkMessage {
-  using message_size = uint16_t;
+  using message_size = uint32_t;
   using message_kind = uint16_t;
 
   struct message_header {
     message_kind kind;
   };
 
-  static const size_t MAX_MESSAGE_SIZE = std::numeric_limits<message_size>::max();
+  static const size_t MAX_MESSAGE_SIZE = 1024*1024*4;
   static const size_t SIZE_OF_MESSAGE_SIZE = sizeof(message_size);
   static const size_t MAX_BUFFER_SIZE = MAX_MESSAGE_SIZE - sizeof(message_header);
 

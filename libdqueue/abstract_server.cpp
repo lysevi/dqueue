@@ -19,7 +19,7 @@ AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
 
   AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
     this->onNetworkError(d, err);
-	this->_server->erase_client_description(this);
+	this->close();
   };
 
   AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
@@ -32,10 +32,16 @@ AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
 }
 
 AbstractServer::ClientConnection::~ClientConnection() {
-  if (_async_connection != nullptr) {
-    _async_connection->full_stop();
-    _async_connection = nullptr;
-  }
+  
+}
+
+void AbstractServer::ClientConnection::close() {
+	if (_async_connection != nullptr) {
+		_async_connection->full_stop();
+		_async_connection = nullptr;
+
+		this->_server->erase_client_description(this);
+	}
 }
 
 void AbstractServer::ClientConnection::onMessageSended(const NetworkMessage_ptr &d) {
@@ -119,7 +125,13 @@ void AbstractServer::stopServer() {
   if (!_is_stoped) {
     logger("abstract_server::stopServer()");
     _acc = nullptr;
-    _connections.clear();
+	if (!_connections.empty()) {
+		std::vector<std::shared_ptr<ClientConnection>> local_copy(_connections.begin(), _connections.end());
+		for (auto con : local_copy) {
+			con->close();
+		}
+		_connections.clear();
+	}
     _is_stoped = true;
   }
 }

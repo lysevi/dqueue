@@ -18,6 +18,7 @@ public:
   public:
     ClientConnection(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
     ~ClientConnection();
+	void close();
     void onMessageSended(const NetworkMessage_ptr &d);
     void onNetworkError(const NetworkMessage_ptr &d,
                         const boost::system::error_code &err);

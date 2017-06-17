@@ -50,6 +50,7 @@ public:
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);
+  void disconnect_client(const ClientConnection*client);
 
 protected:
   boost::asio::io_service *_service = nullptr;

@@ -1,5 +1,5 @@
 #include <libdqueue/abstract_server.h>
-
+#include <libdqueue/utils/utils.h>
 #include <functional>
 #include <string>
 
@@ -16,8 +16,10 @@ AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
   AsyncIO::onDataRecvHandler on_d = [this](const NetworkMessage_ptr &d, bool &cancel) {
     this->onDataRecv(d, cancel);
   };
+
   AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
     this->onNetworkError(d, err);
+	this->_server->disconnect_client(this);
   };
 
   AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
@@ -75,6 +77,14 @@ void AbstractServer::serverStart() {
 void AbstractServer::start_accept(socket_ptr sock) {
   _acc->async_accept(*sock,
                      std::bind(&handle_accept, this->shared_from_this(), sock, _1));
+}
+
+void AbstractServer::disconnect_client(const ClientConnection*client) {
+	std::lock_guard<std::mutex> lg(_locker_connections);
+	auto it=std::find_if(_connections.begin(), _connections.end(),
+		[client](auto c) {return c->get_id() == client->get_id(); });
+	ENSURE(it != _connections.end());
+	_connections.erase(it);
 }
 
 void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,

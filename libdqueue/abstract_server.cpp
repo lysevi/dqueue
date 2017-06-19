@@ -19,7 +19,7 @@ AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
 
   AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
     this->onNetworkError(d, err);
-	this->close();
+    this->close();
   };
 
   AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
@@ -31,17 +31,15 @@ AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
   _async_connection->start(sock);
 }
 
-AbstractServer::ClientConnection::~ClientConnection() {
-  
-}
+AbstractServer::ClientConnection::~ClientConnection() {}
 
 void AbstractServer::ClientConnection::close() {
-	if (_async_connection != nullptr) {
-		_async_connection->full_stop();
-		_async_connection = nullptr;
+  if (_async_connection != nullptr) {
+    _async_connection->full_stop();
+    _async_connection = nullptr;
 
-		this->_server->erase_client_description(this);
-	}
+    this->_server->erase_client_description(this);
+  }
 }
 
 void AbstractServer::ClientConnection::onMessageSended(const NetworkMessage_ptr &d) {
@@ -85,12 +83,12 @@ void AbstractServer::start_accept(socket_ptr sock) {
                      std::bind(&handle_accept, this->shared_from_this(), sock, _1));
 }
 
-void AbstractServer::erase_client_description(const ClientConnection*client) {
-	std::lock_guard<std::mutex> lg(_locker_connections);
-	auto it=std::find_if(_connections.begin(), _connections.end(),
-		[client](auto c) {return c->get_id() == client->get_id(); });
-	ENSURE(it != _connections.end());
-	_connections.erase(it);
+void AbstractServer::erase_client_description(const ClientConnection *client) {
+  std::lock_guard<std::mutex> lg(_locker_connections);
+  auto it = std::find_if(_connections.begin(), _connections.end(),
+                         [client](auto c) { return c->get_id() == client->get_id(); });
+  ENSURE(it != _connections.end());
+  _connections.erase(it);
 }
 
 void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
@@ -125,13 +123,25 @@ void AbstractServer::stopServer() {
   if (!_is_stoped) {
     logger("abstract_server::stopServer()");
     _acc = nullptr;
-	if (!_connections.empty()) {
-		std::vector<std::shared_ptr<ClientConnection>> local_copy(_connections.begin(), _connections.end());
-		for (auto con : local_copy) {
-			con->close();
-		}
-		_connections.clear();
-	}
+    if (!_connections.empty()) {
+      std::vector<std::shared_ptr<ClientConnection>> local_copy(_connections.begin(),
+                                                                _connections.end());
+      for (auto con : local_copy) {
+        con->close();
+      }
+      _connections.clear();
+    }
     _is_stoped = true;
   }
+}
+
+void AbstractServer::sendTo(int id, NetworkMessage_ptr &d) {
+  std::lock_guard<std::mutex> lg(this->_locker_connections);
+  for (auto c : _connections) {
+    if (c->get_id() == id) {
+      c->sendData(d);
+      return;
+    }
+  }
+  THROW_EXCEPTION("server: unknow client #", id);
 }

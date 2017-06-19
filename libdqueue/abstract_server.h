@@ -25,7 +25,6 @@ public:
     void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
     EXPORT void sendData(const NetworkMessage_ptr &d);
     EXPORT int get_id() const { return id; }
-
   private:
     int id;
     socket_ptr sock = nullptr;
@@ -40,6 +39,7 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
+  EXPORT void sendTo(int id, NetworkMessage_ptr&d);
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
   virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
@@ -47,7 +47,7 @@ public:
   virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
                             bool &cancel) = 0;
   virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) = 0;
-
+  
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);

@@ -17,6 +17,7 @@ public:
   EXPORT void stopServer();
   EXPORT bool is_started();
   EXPORT std::vector<Node::QueueDescription> getDescription()const;
+  EXPORT std::vector<Node::ClientDescription> getClientDescription()const;
 protected:
   struct Private;
   std::shared_ptr<Private> _impl;

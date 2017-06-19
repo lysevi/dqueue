@@ -47,7 +47,8 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ", server == nullptr);
+    logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ",
+                server == nullptr);
     service.poll_one();
   }
 
@@ -84,17 +85,28 @@ TEST_CASE("server.client.create_queue") {
 
   server_stop = false;
   std::thread t(server_thread);
-  
+
   auto client = std::make_shared<Client>(&service, p);
   client->asyncConnect();
   while (!client->is_connected()) {
-	  logger_info("server.client.create_queue client not connected");
-	  service.poll_one();
+    logger_info("server.client.create_queue client not connected");
+    service.poll_one();
   }
 
-
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.create_queue !server->is_started serverIsNull? ", server == nullptr);
+    logger_info("server.client.create_queue !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  while (true) {
+    auto cds = server->getClientDescription();
+    if (cds.size() == size_t(1)) {
+      break;
+    } else {
+      service.poll_one();
+      logger_info("server.client.create_queue erver->getClientDescription is empty ",
+                  server == nullptr);
+    }
   }
 
   auto qname = "server.client.create_queue1";
@@ -108,6 +120,45 @@ TEST_CASE("server.client.create_queue") {
       break;
     }
     logger_info("server.client.create_queue server->getDescription is empty");
+    service.poll_one();
+  }
+
+  client->subscribe(qname);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty() && !ds.front().subscribers.empty()) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server.client.create_queue server->getDescription is empty");
+    service.poll_one();
+  }
+
+  auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
+  bool sended = false;
+  Client::dataHandler handler = [&test_data, &sended](const Queue &q,
+                                                      const std::vector<uint8_t> &data) {
+    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), data.begin(), data.end()));
+    sended = true;
+  };
+
+  client->addHandler(handler);
+
+  client->publish(qname, test_data);
+  while (!sended) {
+    logger_info("server.client.create_queue !sended");
+    service.poll_one();
+  }
+
+  client->unsubscribe(qname);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (ds.empty() || !ds.empty() && ds.front().subscribers.empty()) {
+      break;
+    }
+    logger_info("server.client.create_queue server->getDescription is not empty");
     service.poll_one();
   }
 

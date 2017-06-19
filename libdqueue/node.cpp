@@ -7,7 +7,7 @@ using namespace dqueue;
 
 struct Node::Private {
   Private(const Settings &settigns, dataHandler dh) : _settigns(settigns) {
-    dataHandler = dh;
+    _handler = dh;
     nextQueueId = 0;
   }
 
@@ -125,7 +125,7 @@ struct Node::Private {
     }
 
     for (auto clientId : local_cpy) {
-      dataHandler(rd, clientId);
+      _handler(rd, clientId);
     }
   }
 
@@ -141,7 +141,7 @@ struct Node::Private {
   mutable std::shared_mutex _subscriptions_locker;
   std::map<int, std::set<int>> _subscriptions; // qId 2 userId
 
-  dataHandler dataHandler;
+  Node::dataHandler _handler;
 };
 
 Node::Node(const Settings &settigns, dataHandler dh)

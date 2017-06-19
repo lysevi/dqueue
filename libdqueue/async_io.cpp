@@ -1,8 +1,6 @@
 #include <libdqueue/async_io.h>
 #include <libdqueue/utils/exception.h>
-#include <functional>
 
-using namespace std::placeholders;
 using namespace boost::asio;
 using namespace dqueue;
 
@@ -46,7 +44,7 @@ void AsyncIO::full_stop() {
   }
 }
 
-void AsyncIO::send(const NetworkMessage_ptr &d) {
+void AsyncIO::send(const NetworkMessage_ptr d) {
   if (!_begin_stoping_flag) {
     auto ptr = shared_from_this();
 
@@ -74,25 +72,8 @@ void AsyncIO::readNextAsync() {
   if (auto spt = _sock.lock()) {
     auto ptr = shared_from_this();
 
-    auto on_read_message = [ptr](NetworkMessage_ptr d, auto err, auto /*read_bytes*/) {
-      if (err) {
-        ptr->_on_error_handler(d, err);
-      } else {
-        bool cancel_flag = false;
-        try {
-          ptr->_on_recv_hadler(d, cancel_flag);
-        } catch (std::exception &ex) {
-          THROW_EXCEPTION("exception on async readData. #", ptr->_async_con_id, " - ",
-                          ex.what());
-        }
+    auto on_read_size = [this, ptr, spt](auto err, auto read_bytes) {
 
-        if (!cancel_flag) {
-          ptr->readNextAsync();
-        }
-      }
-    };
-
-    auto on_read_size = [this, ptr, spt, on_read_message](auto err, auto read_bytes) {
       if (err) {
         ptr->_on_error_handler(nullptr, err);
       } else {
@@ -102,11 +83,30 @@ void AsyncIO::readNextAsync() {
                           NetworkMessage::SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
         }
 
-		auto data_left = ptr->next_message_size - NetworkMessage::SIZE_OF_MESSAGE_SIZE;
+        auto data_left = ptr->next_message_size - NetworkMessage::SIZE_OF_MESSAGE_SIZE;
         NetworkMessage_ptr d = std::make_shared<NetworkMessage>(data_left);
+
+        auto on_read_message = [ptr, d](auto err, auto /*read_bytes*/) {
+          if (err) {
+            ptr->_on_error_handler(d, err);
+          } else {
+            bool cancel_flag = false;
+            try {
+              ptr->_on_recv_hadler(d, cancel_flag);
+            } catch (std::exception &ex) {
+              THROW_EXCEPTION("exception on async readData. #", ptr->_async_con_id, " - ",
+                              ex.what());
+            }
+
+            if (!cancel_flag) {
+              ptr->readNextAsync();
+            }
+          }
+        };
+
         auto buf_ptr = (uint8_t *)(d->data + NetworkMessage::SIZE_OF_MESSAGE_SIZE);
         auto buf = buffer(buf_ptr, data_left);
-        async_read(*spt.get(), buf, std::bind(on_read_message, d, _1, _2));
+        async_read(*spt.get(), buf, on_read_message);
       }
     };
 

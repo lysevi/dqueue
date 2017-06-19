@@ -22,7 +22,7 @@ public:
   EXPORT AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr,
                  onNetworkSuccessSendHandler onSended);
   EXPORT ~AsyncIO() noexcept(false);
-  EXPORT void send(const NetworkMessage_ptr &d);
+  EXPORT void send(const NetworkMessage_ptr d);
   EXPORT void start(const socket_ptr &sock);
   EXPORT void mark_stoped();
   EXPORT void full_stop(); /// stop thread, clean queue

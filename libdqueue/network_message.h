@@ -35,6 +35,10 @@ struct NetworkMessage {
 
   ~NetworkMessage() {}
 
+  uint8_t* value() {
+	  return (data + sizeof(message_kind));
+  }
+
   std::tuple<message_size, uint8_t *> as_buffer() {
     uint8_t *v = reinterpret_cast<uint8_t *>(this);
     auto buf_size = static_cast<message_size>(SIZE_OF_MESSAGE_SIZE + size);

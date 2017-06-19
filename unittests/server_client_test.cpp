@@ -64,7 +64,7 @@ void testForReconnection(const size_t clients_count) {
   }
   t.join();
 }
-}
+} // namespace
 
 TEST_CASE("server.client.1") {
   const size_t connections_count = 1;
@@ -74,4 +74,47 @@ TEST_CASE("server.client.1") {
 TEST_CASE("server.client.10") {
   const size_t connections_count = 10;
   testForReconnection(connections_count);
+}
+
+TEST_CASE("server.client.create_queue") {
+  boost::asio::io_service service;
+  AbstractClient::Params p;
+  p.host = "localhost";
+  p.port = 4040;
+
+  server_stop = false;
+  std::thread t(server_thread);
+
+  while (server == nullptr || !server->is_started()) {
+    logger_info("!server->is_started serverIsNull? ", server == nullptr);
+    service.poll_one();
+  }
+
+  auto client = std::make_shared<Client>(&service, p);
+
+  client->asyncConnect();
+  while (!client->is_connected()) {
+    logger_info("client not connected");
+    service.poll_one();
+  }
+
+  auto qname = "server.client.create_queue1";
+  QueueSettings qsettings1(qname);
+  client->createQueue(qsettings1);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty()) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server->getDescription is empty");
+    service.poll_one();
+  }
+
+  server_stop = true;
+  while (server != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  t.join();
 }

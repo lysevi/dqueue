@@ -3,6 +3,7 @@
 #include <libdqueue/abstract_server.h>
 #include <libdqueue/async_io.h>
 #include <libdqueue/exports.h>
+#include <libdqueue/node.h>
 #include <libdqueue/utils/utils.h>
 #include <mutex>
 
@@ -15,7 +16,7 @@ public:
   EXPORT void serverStart();
   EXPORT void stopServer();
   EXPORT bool is_started();
-
+  EXPORT std::vector<Node::QueueDescription> getDescription()const;
 protected:
   struct Private;
   std::shared_ptr<Private> _impl;

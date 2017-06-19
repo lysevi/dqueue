@@ -18,7 +18,7 @@ struct NetworkMessage {
   static const size_t MAX_MESSAGE_SIZE = 1024 * 1024 * 4;
   static const size_t SIZE_OF_MESSAGE_SIZE = sizeof(message_size);
   static const size_t SIZE_OF_KIND = sizeof(message_kind);
-  static const size_t MAX_BUFFER_SIZE = MAX_MESSAGE_SIZE - sizeof(message_header);
+  //static const size_t MAX_BUFFER_SIZE = MAX_MESSAGE_SIZE - sizeof(message_header);
 
   message_size *size;
   uint8_t *data;

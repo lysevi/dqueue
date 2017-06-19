@@ -12,11 +12,12 @@ struct Client::Private final : virtual public AbstractClient {
 
   virtual ~Private() {}
 
+
   void addHandler(dataHandler handler) { _handler = handler; }
 
   void connect() {
     this->async_connect();
-    while (!this->isConnected) {
+    while (!this->is_connected()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
   }
@@ -110,6 +111,10 @@ bool Client::is_connected() {
 
 void Client::connect() {
   return _impl->connect();
+}
+
+void Client::disconnect() {
+	return _impl->disconnect();
 }
 
 void Client::createQueue(const QueueSettings &settings) {

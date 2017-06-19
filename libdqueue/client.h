@@ -16,6 +16,7 @@ public:
   EXPORT void addHandler(dataHandler handler);
   EXPORT void asyncConnect();
   EXPORT void connect();
+  EXPORT void disconnect();
   EXPORT bool is_connected();
   EXPORT void createQueue(const QueueSettings &settings);
   EXPORT void subscribe(const std::string &qname);

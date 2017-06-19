@@ -59,6 +59,14 @@ void testForReconnection(const size_t clients_count) {
     }
   }
 
+  for (auto&c : clients) {
+	  c->disconnect();
+	  while (c->is_connected()) {
+		  logger_info("server.client.testForReconnection. client is still connected");
+		  service.poll_one();
+	  }
+  }
+  
   server_stop = true;
   while (server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -161,6 +169,8 @@ TEST_CASE("server.client.create_queue") {
     logger_info("server.client.create_queue server->getDescription is not empty");
     service.poll_one();
   }
+
+ 
 
   server_stop = true;
   while (server != nullptr) {

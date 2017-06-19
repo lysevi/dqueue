@@ -29,7 +29,7 @@ struct testable_client : public AbstractClient {
   void onConnect() override {
     logger_info("client: send hello ");
 
-    auto nd = std::make_shared<NetworkMessage>(1);
+    auto nd = std::make_shared<NetworkMessage>(1, NetworkMessage::message_kind(1));
 
     this->_async_connection->send(nd);
   }
@@ -146,7 +146,8 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
-    logger_info("testForReconnection. !server->is_started serverIsNull? ", server == nullptr);
+    logger_info("testForReconnection. !server->is_started serverIsNull? ",
+                server == nullptr);
     service.poll_one();
   }
 
@@ -204,7 +205,7 @@ void testForReconnection(const size_t clients_count) {
   }
   t.join();
 }
-}
+} // namespace
 
 TEST_CASE("reconnetion.1") {
   const size_t connections_count = 1;

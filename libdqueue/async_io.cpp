@@ -3,9 +3,7 @@
 #include <functional>
 
 using namespace std::placeholders;
-
 using namespace boost::asio;
-
 using namespace dqueue;
 
 AsyncIO::AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr,
@@ -75,9 +73,8 @@ void AsyncIO::send(const NetworkMessage_ptr &d) {
 void AsyncIO::readNextAsync() {
   if (auto spt = _sock.lock()) {
     auto ptr = shared_from_this();
-    NetworkMessage_ptr d = std::make_shared<NetworkMessage>();
 
-    auto on_read_message = [ptr, d](auto err, auto /*read_bytes*/) {
+    auto on_read_message = [ptr](NetworkMessage_ptr d, auto err, auto /*read_bytes*/) {
       if (err) {
         ptr->_on_error_handler(d, err);
       } else {
@@ -95,22 +92,27 @@ void AsyncIO::readNextAsync() {
       }
     };
 
-    auto on_read_size = [ptr, d, spt, on_read_message](auto err, auto read_bytes) {
+    auto on_read_size = [this, ptr, spt, on_read_message](auto err, auto read_bytes) {
       if (err) {
-        ptr->_on_error_handler(d, err);
+        ptr->_on_error_handler(nullptr, err);
       } else {
         if (read_bytes != NetworkMessage::SIZE_OF_MESSAGE_SIZE) {
           THROW_EXCEPTION("exception on async readMarker. #", ptr->_async_con_id,
                           " - wrong marker size: expected ",
                           NetworkMessage::SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
         }
-        auto buf = buffer((uint8_t *)(&d->data), d->size);
-        async_read(*spt.get(), buf, on_read_message);
+
+		auto data_left = ptr->next_message_size - NetworkMessage::SIZE_OF_MESSAGE_SIZE;
+        NetworkMessage_ptr d = std::make_shared<NetworkMessage>(data_left);
+        auto buf_ptr = (uint8_t *)(d->data + NetworkMessage::SIZE_OF_MESSAGE_SIZE);
+        auto buf = buffer(buf_ptr, data_left);
+        async_read(*spt.get(), buf, std::bind(on_read_message, d, _1, _2));
       }
     };
 
-    async_read(*spt.get(),
-               buffer((uint8_t *)(&d->size), NetworkMessage::SIZE_OF_MESSAGE_SIZE),
-               on_read_size);
+    async_read(
+        *spt.get(),
+        buffer((void *)&(ptr->next_message_size), NetworkMessage::SIZE_OF_MESSAGE_SIZE),
+        on_read_size);
   }
 }

@@ -42,8 +42,10 @@ private:
   bool _is_stoped;
   std::atomic_bool _begin_stoping_flag;
 
+  NetworkMessage::message_size next_message_size;
+
   onDataRecvHandler _on_recv_hadler;
   onNetworkErrorHandler _on_error_handler;
   onNetworkSuccessSendHandler _on_sended_handler;
 };
-}
+} // namespace dqueue

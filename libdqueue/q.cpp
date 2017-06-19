@@ -21,8 +21,7 @@ uint64_t current_time() {
 NetworkMessage_ptr QueueSettings::toNetworkMessage()const {
 	uint32_t len = static_cast<uint32_t>(name.size());
 	uint32_t neededSize = sizeof(uint32_t) + len;
-	auto nd = std::make_shared<NetworkMessage>(0);
-	nd->size += neededSize;
+	auto nd = std::make_shared<NetworkMessage>(neededSize, 0);
 	memcpy(nd->value(), &(len), sizeof(uint32_t));
 	memcpy(nd->value()+ sizeof(uint32_t), this->name.data(), this->name.size());
 	return nd;

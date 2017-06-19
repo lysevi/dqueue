@@ -27,8 +27,8 @@ struct ChangeSubscribe {
     uint32_t len = static_cast<uint32_t>(qname.size());
     uint32_t neededSize = sizeof(uint32_t) + len;
     auto nd = std::make_shared<NetworkMessage>(
-        (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);
-    nd->size += neededSize;
+        neededSize, (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);
+
     memcpy(nd->value(), &(len), sizeof(uint32_t));
     memcpy(nd->value() + sizeof(uint32_t), this->qname.data(), this->qname.size());
     return nd;
@@ -54,13 +54,13 @@ struct Publish {
 
     qname.resize(len);
     memcpy(&qname[0], ptr, len);
-	ptr += len;
+    ptr += len;
 
-	memcpy(&len, ptr, sizeof(uint32_t));
-	ptr += sizeof(uint32_t);
-	
-	data.resize(len);
-	memcpy(&data[0], ptr, len);
+    memcpy(&len, ptr, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+
+    data.resize(len);
+    memcpy(&data[0], ptr, len);
   }
 
   NetworkMessage_ptr toNetworkMessage() const {
@@ -69,9 +69,8 @@ struct Publish {
     uint32_t neededSize = sizeof(uint32_t) * 2 + qname_len + data_len;
 
     auto nd = std::make_shared<NetworkMessage>(
-        (NetworkMessage::message_kind)MessageKinds::PUBLISH);
+        neededSize, (NetworkMessage::message_kind)MessageKinds::PUBLISH);
 
-    nd->size += neededSize;
     uint8_t *ptr = nd->value();
     memcpy(ptr, &(qname_len), sizeof(uint32_t));
 

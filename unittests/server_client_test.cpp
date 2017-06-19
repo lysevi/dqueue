@@ -47,13 +47,13 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
-    logger_info("!server->is_started serverIsNull? ", server == nullptr);
+    logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ", server == nullptr);
     service.poll_one();
   }
 
   for (auto &c : clients) {
     while (!c->is_connected()) {
-      logger_info("client not connected");
+      logger_info("server.client.testForReconnection. client not connected");
       service.poll_one();
     }
   }
@@ -84,18 +84,17 @@ TEST_CASE("server.client.create_queue") {
 
   server_stop = false;
   std::thread t(server_thread);
-
-  while (server == nullptr || !server->is_started()) {
-    logger_info("!server->is_started serverIsNull? ", server == nullptr);
-    service.poll_one();
-  }
-
+  
   auto client = std::make_shared<Client>(&service, p);
-
   client->asyncConnect();
   while (!client->is_connected()) {
-    logger_info("client not connected");
-    service.poll_one();
+	  logger_info("server.client.create_queue client not connected");
+	  service.poll_one();
+  }
+
+
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.create_queue !server->is_started serverIsNull? ", server == nullptr);
   }
 
   auto qname = "server.client.create_queue1";
@@ -108,7 +107,7 @@ TEST_CASE("server.client.create_queue") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server->getDescription is empty");
+    logger_info("server.client.create_queue server->getDescription is empty");
     service.poll_one();
   }
 

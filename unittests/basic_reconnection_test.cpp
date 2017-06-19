@@ -146,19 +146,19 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
-    logger_info("!server->is_started serverIsNull? ", server == nullptr);
+    logger_info("testForReconnection. !server->is_started serverIsNull? ", server == nullptr);
     service.poll_one();
   }
 
   for (auto &c : clients) {
     while (!c->is_connected()) {
-      logger_info("client not connected");
+      logger_info("testForReconnection. client not connected");
       service.poll_one();
     }
   }
   for (auto &c : clients) {
     while (!server->all_id_gt(10) && c->message_one < 10) {
-      logger_info("client.message_one: ", c->message_one);
+      logger_info("testForReconnection. client.message_one: ", c->message_one);
       service.poll_one();
     }
   }
@@ -172,7 +172,7 @@ void testForReconnection(const size_t clients_count) {
   for (auto &c : clients) {
     EXPECT_TRUE(c->success);
     while (c->is_connected()) {
-      logger_info("client is still connected");
+      logger_info("testForReconnection. client is still connected");
       service.poll_one();
     }
   }
@@ -182,7 +182,7 @@ void testForReconnection(const size_t clients_count) {
   t = std::thread(server_thread);
   for (auto &c : clients) {
     while (!c->is_connected() && (server == nullptr || !server->is_started())) {
-      logger_info("client and server is not connected");
+      logger_info("testForReconnection. client and server is not connected");
       service.poll_one();
     }
   }
@@ -193,7 +193,7 @@ void testForReconnection(const size_t clients_count) {
   }
   for (auto &c : clients) {
     while (c->is_connected()) {
-      logger_info("client is still connected");
+      logger_info("testForReconnection. client is still connected");
       service.poll_one();
     }
   }

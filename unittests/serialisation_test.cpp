@@ -26,7 +26,6 @@ TEST_CASE("serialisation.size_of_args") {
 
 TEST_CASE("serialisation.scheme") {
 	std::vector<int8_t> buffer(1024);
-	using iterator_t = std::vector<int8_t>::iterator;
 
 	auto it = buffer.begin();
 	serialisation::Scheme<int>::write(it, 1);

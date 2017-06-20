@@ -1,8 +1,8 @@
 #include "helpers.h"
 #include <libdqueue/q.h>
 #include <libdqueue/queries.h>
+#include <libdqueue/serialisation.h>
 #include <libdqueue/utils/utils.h>
-
 #include <algorithm>
 
 #include <catch.hpp>
@@ -10,6 +10,39 @@
 using namespace dqueue;
 using namespace dqueue::utils;
 using namespace dqueue::queries;
+
+TEST_CASE("serialisation.size_of_args") {
+  EXPECT_EQ(serialisation::size_of_args(int(1)), sizeof(int));
+  auto sz = serialisation::size_of_args(int(1), int(1));
+  EXPECT_EQ(sz, sizeof(int) * 2);
+
+  sz = serialisation::size_of_args(int(1), int(1), double(1.0));
+  EXPECT_EQ(sz, sizeof(int) * 2 + sizeof(double));
+
+  std::string str = "hello world";
+  EXPECT_EQ(serialisation::size_of_args(str), sizeof(uint32_t) + str.size());
+}
+
+TEST_CASE("serialisation.scheme") {
+  EXPECT_EQ(serialisation::Scheme<int>(1).buffer.size(), sizeof(int));
+  serialisation::Scheme<int, int> i2(1, 2);
+  EXPECT_EQ(i2.buffer.size(), sizeof(int) * 2);
+
+  int unpacked1, unpacked2;
+  serialisation::Scheme<int, int> i2_cpy;
+  i2_cpy.init_from_buffer(i2.buffer);
+  i2_cpy.readTo(unpacked1, unpacked2);
+  EXPECT_EQ(unpacked1, 1);
+  EXPECT_EQ(unpacked2, 2);
+
+  std::string str = "hello world";
+  serialisation::Scheme<int, std::string> s1(11, std::move(str));
+  EXPECT_EQ(s1.buffer.size(), sizeof(int) + sizeof(uint32_t) + str.size());
+  std::string unpackedS;
+  s1.readTo(unpacked1, unpackedS);
+  EXPECT_EQ(unpacked1, 11);
+  EXPECT_EQ(unpackedS, str);
+}
 
 TEST_CASE("serialisation.queue_settings") {
   std::string name = "node.queue_settings.name";

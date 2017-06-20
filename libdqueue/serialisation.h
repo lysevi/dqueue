@@ -17,23 +17,42 @@ template <class T> size_t get_size_of(const T &) {
 
 template <> EXPORT size_t get_size_of<std::string>(const std::string &s);
 
-template <typename S>
-void write_value(std::vector<uint8_t> &buffer, size_t &offset, const S &s) {
-  std::memcpy(buffer.data() + offset, &s, sizeof(s));
-}
+template <typename Iterator, typename S>
+struct writer {
+	static void write_value(Iterator it, const S &s) {
+		std::memcpy(&(*it), &s, sizeof(s));
+	}
+};
 
-template <typename S>
-void read_value(std::vector<uint8_t> &buffer, size_t &offset, S &s) {
-  std::memcpy(&s, buffer.data() + offset, sizeof(s));
-}
+template <typename Iterator>
+struct writer<Iterator, std::string> {
+	static void write_value(Iterator it, const std::string &s) {
+		auto len = static_cast<uint32_t>(s.size());
+		auto ptr = &(*it);
+		std::memcpy(ptr, &len, sizeof(uint32_t));
+		std::memcpy(ptr + sizeof(uint32_t), s.data(), s.size());
+	}
+};
 
-template <>
-EXPORT void read_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset,
-                                    std::string &s);
+template <typename Iterator, typename S>
+struct reader{
+	static void read_value(Iterator&it, S &s) {
+		auto ptr = &(*it);
+		std::memcpy(&s, ptr, sizeof(s));
+	}
+};
 
-template <>
-void EXPORT write_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset,
-                                     const std::string &s);
+template <typename Iterator>
+struct reader<Iterator, std::string> {
+	static void read_value(Iterator&it, std::string &s) {
+		uint32_t len = 0;
+		auto ptr = &(*it);
+		std::memcpy(&len, ptr, sizeof(uint32_t));
+		s.resize(len);
+		std::memcpy(&s[0], ptr + sizeof(uint32_t), size_t(len));
+	}
+
+};
 
 template <class... T> struct Scheme {
   template <typename Head> static void calculate_size_rec(size_t &result, Head &&head) {
@@ -52,55 +71,47 @@ template <class... T> struct Scheme {
     return result;
   }
 
+  template<class Iterator>
   struct Writer {
-    std::vector<uint8_t> buffer;
-    size_t offset;
-
-    template <typename Head> void write_args(Head &&head) {
+    template <typename Head> void write_args(Iterator&it, Head &&head) {
       auto szofcur = get_size_of(head);
-      write_value(buffer, offset, head);
-      offset += szofcur;
+      writer<Iterator, Head>::write_value(it, head);
+      it += szofcur;
     }
 
     template <typename Head, typename... Tail>
-    void write_args(Head &&head, Tail &&... t) {
+    void write_args(Iterator&it, Head &&head, Tail &&... t) {
       auto szofcur = get_size_of(head);
-      write_value(buffer, offset, head);
-      offset += szofcur;
-      write_args(std::forward<Tail>(t)...);
+	  writer<Iterator, Head>::write_value(it, head);
+	  it += szofcur;
+      write_args(it, std::forward<Tail>(t)...);
     }
 
-    Writer(T &&... t) {
-      offset = 0;
-      auto sz = size_of_args(std::forward<T>(t)...);
-      buffer.resize(sz);
-
-      write_args(std::forward<T>(t)...);
+    Writer(Iterator&it, T  &&... t) {
+      write_args(it, std::forward<T>(t)...);
     }
   };
 
+  
   struct Reader {
-    std::vector<uint8_t> buffer;
-    size_t offset;
-
-    template <typename Head> void read_args(Head &&head) {
+    template <class Iterator, typename Head> 
+	static void read_args(Iterator&it, Head &&head) {
       auto szofcur = get_size_of(head);
-      read_value(buffer, offset, head);
-      offset += szofcur;
+	  reader<Iterator, Head>::read_value(it, head);
+      it += szofcur;
     }
 
-    template <typename Head, typename... Tail> void read_args(Head &&head, Tail &&... t) {
+    template <class Iterator, typename Head, typename... Tail>
+	static void read_args(Iterator&it, Head &&head, Tail &&... t) {
       auto szofcur = get_size_of(head);
-      read_value(buffer, offset, head);
-      offset += szofcur;
-      read_args(std::forward<Tail>(t)...);
+      reader<Iterator,Head>::read_value(it, head);
+      it += szofcur;
+      read_args(it, std::forward<Tail>(t)...);
     }
 
-    Reader(const std::vector<uint8_t> &buf) : buffer(buf) { offset = size_t(0); }
-
-    void read(T &... t) {
-      offset = 0;
-      read_args(std::forward<T>(t)...);
+	template<class Iterator>
+    static void read(Iterator&it,T &... t) {
+      read_args(it, std::forward<T>(t)...);
     }
   };
 };

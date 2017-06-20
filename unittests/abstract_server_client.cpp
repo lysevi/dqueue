@@ -17,7 +17,9 @@ using namespace boost::asio;
 using namespace dqueue;
 using namespace dqueue::utils;
 
-namespace {
+namespace abstract_server_client_ns {
+
+
 struct testable_client : public AbstractClient {
   size_t message_one = 0;
 
@@ -119,25 +121,25 @@ struct testable_server : public AbstractServer {
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 
-  void onDisconnect(const ClientConnection &i) override {
-	  connections.erase(i.get_id());
-  }
+  void onDisconnect(const ClientConnection &i) override { connections.erase(i.get_id()); }
 };
 
 bool server_stop = false;
-std::shared_ptr<testable_server> server = nullptr;
-void server_thread() {
-  boost::asio::io_service service;
-  AbstractServer::params p;
-  p.port = 4040;
-  server = std::make_shared<testable_server>(&service, p);
 
-  server->serverStart();
-  while (!server_stop) {
-    service.poll_one();
-  }
-  server->stopServer();
-  server = nullptr;
+std::shared_ptr<testable_server> abstract_server = nullptr;
+
+void server_thread() {
+	boost::asio::io_service service;
+	AbstractServer::params p;
+	p.port = 4040;
+	abstract_server = std::make_shared<testable_server>(&service, p);
+
+	abstract_server->serverStart();
+	while (!server_stop) {
+		service.poll_one();
+	}
+	abstract_server->stopServer();
+	abstract_server = nullptr;
 }
 
 void testForReconnection(const size_t clients_count) {
@@ -152,9 +154,9 @@ void testForReconnection(const size_t clients_count) {
   }
   server_stop = false;
   std::thread t(server_thread);
-  while (server == nullptr || !server->is_started()) {
+  while (abstract_server == nullptr || !abstract_server->is_started()) {
     logger_info("testForReconnection. !server->is_started serverIsNull? ",
-                server == nullptr);
+                abstract_server == nullptr);
     service.poll_one();
   }
 
@@ -165,15 +167,15 @@ void testForReconnection(const size_t clients_count) {
     }
   }
   for (auto &c : clients) {
-    while (!server->all_id_gt(10) && c->message_one < 10) {
+    while (!abstract_server->all_id_gt(10) && c->message_one < 10) {
       logger_info("testForReconnection. client.message_one: ", c->message_one);
       service.poll_one();
     }
   }
-  EXPECT_TRUE(server->success);
-  EXPECT_EQ(server->connections.size(), clients_count);
+  EXPECT_TRUE(abstract_server->success);
+  EXPECT_EQ(abstract_server.get()->connections.size(), clients_count);
   server_stop = true;
-  while (server != nullptr) {
+  while (abstract_server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   t.join();
@@ -190,7 +192,8 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   t = std::thread(server_thread);
   for (auto &c : clients) {
-    while (!c->is_connected() && (server == nullptr || !server->is_started())) {
+    while (!c->is_connected() &&
+           (abstract_server == nullptr || !abstract_server->is_started())) {
       logger_info("testForReconnection. client and server is not connected");
       service.poll_one();
     }
@@ -206,11 +209,11 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
-  EXPECT_TRUE(server->connections.empty());
+  EXPECT_TRUE(abstract_server->connections.empty());
 
   // stop server
   server_stop = true;
-  while (server != nullptr) {
+  while (abstract_server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   t.join();
@@ -219,10 +222,10 @@ void testForReconnection(const size_t clients_count) {
 
 TEST_CASE("reconnetion.1") {
   const size_t connections_count = 1;
-  testForReconnection(connections_count);
+  abstract_server_client_ns::testForReconnection(connections_count);
 }
 
 TEST_CASE("reconnetion.10") {
   const size_t connections_count = 10;
-  testForReconnection(connections_count);
+  abstract_server_client_ns::testForReconnection(connections_count);
 }

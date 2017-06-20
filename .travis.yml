@@ -1,6 +1,9 @@
 sudo: required
 dist: trusty
+
 language: cpp
+
+group: edge
 
 cache:
   directories:
@@ -34,7 +37,7 @@ before_install:
    - cmake --version
    - git submodule init
    - git submodule update
-
+    
 matrix:
   include:
     - os: linux
@@ -49,6 +52,15 @@ matrix:
     - os: linux
       compiler: gcc-6
       env: IS_RELEASE=TRUE CLANG=FALSE
+#    - os: linux
+#      compiler: clang
+#      env: CLANG=TRUE SANITIZER=MSAN GCOV=FALSE
+#    - os: linux
+#      compiler: clang
+#      env:  CLANG=TRUE SANITIZER=ASAN_UBSAN GCOV=FALSE
+#    - os: linux
+#      compiler: clang
+#      env:  CLANG=TRUE IS_RELEASE=TRUE
 
 script: 
     - bash .travis/build.sh

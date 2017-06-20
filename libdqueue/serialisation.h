@@ -20,6 +20,7 @@ template <> EXPORT size_t get_size_of<std::string>(const std::string &s);
 template <typename Iterator, typename S>
 struct writer {
 	static void write_value(Iterator it, const S &s) {
+		static_assert(std::is_pod<S>::value, "S is not a POD value");
 		std::memcpy(&(*it), &s, sizeof(s));
 	}
 };
@@ -37,6 +38,7 @@ struct writer<Iterator, std::string> {
 template <typename Iterator, typename S>
 struct reader{
 	static void read_value(Iterator&it, S &s) {
+		static_assert(std::is_pod<S>::value, "S is not a POD value");
 		auto ptr = &(*it);
 		std::memcpy(&s, ptr, sizeof(s));
 	}
@@ -54,7 +56,7 @@ struct reader<Iterator, std::string> {
 
 };
 
-template <class... T> struct Scheme {
+template <class... T> class Scheme {
   template <typename Head> static void calculate_size_rec(size_t &result, Head &&head) {
     result += get_size_of(head);
   }
@@ -65,35 +67,22 @@ template <class... T> struct Scheme {
     calculate_size_rec(result, std::forward<Tail>(t)...);
   }
 
-  static size_t size_of_args(T &&... args) {
-    size_t result = 0;
-    calculate_size_rec(result, std::forward<T>(args)...);
-    return result;
-  }
-
-  template<class Iterator>
-  struct Writer {
-    template <typename Head> void write_args(Iterator&it, Head &&head) {
-      auto szofcur = get_size_of(head);
+  
+    template <class Iterator, typename Head>  
+	static void write_args(Iterator&it, Head &&head) {
+       static auto szofcur = get_size_of(head);
       writer<Iterator, Head>::write_value(it, head);
       it += szofcur;
     }
 
-    template <typename Head, typename... Tail>
-    void write_args(Iterator&it, Head &&head, Tail &&... t) {
+    template <class Iterator,typename Head, typename... Tail>
+	static void write_args(Iterator&it, Head &&head, Tail &&... t) {
       auto szofcur = get_size_of(head);
 	  writer<Iterator, Head>::write_value(it, head);
 	  it += szofcur;
       write_args(it, std::forward<Tail>(t)...);
     }
 
-    Writer(Iterator&it, T  &&... t) {
-      write_args(it, std::forward<T>(t)...);
-    }
-  };
-
-  
-  struct Reader {
     template <class Iterator, typename Head> 
 	static void read_args(Iterator&it, Head &&head) {
       auto szofcur = get_size_of(head);
@@ -108,12 +97,23 @@ template <class... T> struct Scheme {
       it += szofcur;
       read_args(it, std::forward<Tail>(t)...);
     }
+public:
+	static size_t capacity(T &&... args) {
+		size_t result = 0;
+		calculate_size_rec(result, std::forward<T>(args)...);
+		return result;
+	}
+
+	template<class Iterator>
+	static void write(Iterator&it, T  &&... t) {
+		write_args(it, std::forward<T>(t)...);
+	}
 
 	template<class Iterator>
     static void read(Iterator&it,T &... t) {
       read_args(it, std::forward<T>(t)...);
     }
-  };
+  
 };
 } // namespace serialisation
 } // namespace dqueue

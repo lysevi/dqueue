@@ -31,7 +31,7 @@ TEST_CASE("serialisation.scheme") {
 
   int unpacked1, unpacked2;
   serialisation::Scheme<int, int>::Reader i2_cpy(i2.buffer);
-  i2_cpy.readTo(unpacked1, unpacked2);
+  i2_cpy.read(unpacked1, unpacked2);
   EXPECT_EQ(unpacked1, 1);
   EXPECT_EQ(unpacked2, 2);
 
@@ -40,7 +40,7 @@ TEST_CASE("serialisation.scheme") {
   EXPECT_EQ(s1.buffer.size(), sizeof(int) + sizeof(uint32_t) + str.size());
   std::string unpackedS;
   serialisation::Scheme<int, std::string>::Reader sr1(s1.buffer);
-  sr1.readTo(unpacked1, unpackedS);
+  sr1.read(unpacked1, unpackedS);
   EXPECT_EQ(unpacked1, 11);
   EXPECT_EQ(unpackedS, str);
 }

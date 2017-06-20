@@ -56,20 +56,18 @@ template <class... T> struct Scheme {
     std::vector<uint8_t> buffer;
     size_t offset;
 
-    template <typename Head>
-    static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
+    template <typename Head> void write_args(Head &&head) {
       auto szofcur = get_size_of(head);
       write_value(buffer, offset, head);
       offset += szofcur;
     }
 
     template <typename Head, typename... Tail>
-    static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
-                           Tail &&... t) {
+    void write_args(Head &&head, Tail &&... t) {
       auto szofcur = get_size_of(head);
       write_value(buffer, offset, head);
       offset += szofcur;
-      write_args(buffer, offset, std::forward<Tail>(t)...);
+      write_args(std::forward<Tail>(t)...);
     }
 
     Writer(T &&... t) {
@@ -77,7 +75,7 @@ template <class... T> struct Scheme {
       auto sz = size_of_args(std::forward<T>(t)...);
       buffer.resize(sz);
 
-      write_args(buffer, offset, std::forward<T>(t)...);
+      write_args(std::forward<T>(t)...);
     }
   };
 
@@ -85,27 +83,24 @@ template <class... T> struct Scheme {
     std::vector<uint8_t> buffer;
     size_t offset;
 
-    template <typename Head>
-    static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
+    template <typename Head> void read_args(Head &&head) {
       auto szofcur = get_size_of(head);
       read_value(buffer, offset, head);
       offset += szofcur;
     }
 
-    template <typename Head, typename... Tail>
-    static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
-                          Tail &&... t) {
+    template <typename Head, typename... Tail> void read_args(Head &&head, Tail &&... t) {
       auto szofcur = get_size_of(head);
       read_value(buffer, offset, head);
       offset += szofcur;
-      read_args(buffer, offset, std::forward<Tail>(t)...);
+      read_args(std::forward<Tail>(t)...);
     }
 
     Reader(const std::vector<uint8_t> &buf) : buffer(buf) { offset = size_t(0); }
 
-    void readTo(T &... t) {
+    void read(T &... t) {
       offset = 0;
-      read_args(buffer, offset, std::forward<T>(t)...);
+      read_args(std::forward<T>(t)...);
     }
   };
 };

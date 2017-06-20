@@ -12,7 +12,6 @@ struct Client::Private final : virtual public AbstractClient {
 
   virtual ~Private() {}
 
-
   void addHandler(dataHandler handler) { _handler = handler; }
 
   void connect() {
@@ -114,7 +113,7 @@ void Client::connect() {
 }
 
 void Client::disconnect() {
-	return _impl->disconnect();
+  return _impl->disconnect();
 }
 
 void Client::createQueue(const QueueSettings &settings) {

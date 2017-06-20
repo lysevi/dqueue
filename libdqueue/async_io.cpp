@@ -28,18 +28,22 @@ void AsyncIO::start(const socket_ptr &sock) {
   readNextAsync();
 }
 
-void AsyncIO::mark_stoped() {
-  _begin_stoping_flag = true;
-}
-
 void AsyncIO::full_stop() {
-  // mark_stoped();
+  _begin_stoping_flag = true;
   try {
     if (auto spt = _sock.lock()) {
       if (spt->is_open()) {
         boost::system::error_code ec;
         spt->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+        if (ec) {
+          auto message = ec.message();
+          logger_fatal("AsyncIO::full_stop: ", message);
+        }
         spt->close(ec);
+        if (ec) {
+          auto message = ec.message();
+          logger_fatal("AsyncIO::full_stop: ", message);
+        }
       }
     }
   } catch (...) {
@@ -47,26 +51,27 @@ void AsyncIO::full_stop() {
 }
 
 void AsyncIO::send(const NetworkMessage_ptr d) {
-  if (!_begin_stoping_flag) {
-    auto ptr = shared_from_this();
+  if (_begin_stoping_flag) {
+    return;
+  }
+  auto ptr = shared_from_this();
 
-    auto ds = d->as_buffer();
-    auto send_buffer = std::get<1>(ds);
-    auto send_buffer_size = std::get<0>(ds);
+  auto ds = d->as_buffer();
+  auto send_buffer = std::get<1>(ds);
+  auto send_buffer_size = std::get<0>(ds);
 
-    if (auto spt = _sock.lock()) {
-      _messages_to_send++;
-      auto buf = buffer(send_buffer, send_buffer_size);
-      async_write(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
-        if (err) {
-          ptr->_on_error_handler(d, err);
-        } else {
-          ptr->_messages_to_send--;
-          assert(ptr->_messages_to_send >= 0);
-          ptr->_on_sended_handler(d);
-        }
-      });
-    }
+  if (auto spt = _sock.lock()) {
+    _messages_to_send++;
+    auto buf = buffer(send_buffer, send_buffer_size);
+    async_write(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
+      if (err) {
+        ptr->_on_error_handler(d, err);
+      } else {
+        ptr->_messages_to_send--;
+        assert(ptr->_messages_to_send >= 0);
+        ptr->_on_sended_handler(d);
+      }
+    });
   }
 }
 

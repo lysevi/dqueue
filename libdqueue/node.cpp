@@ -173,7 +173,7 @@ struct Node::Private {
   }
 
   void publish(const std::string &qname, const Node::rawData &rd) {
-    int qId = queueByName(qname).queueId;
+    queueByName(qname);
     std::map<int, QueueListener> local_cpy;
 
     {

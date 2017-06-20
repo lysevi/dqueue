@@ -24,7 +24,6 @@ public:
   EXPORT ~AsyncIO() noexcept(false);
   EXPORT void send(const NetworkMessage_ptr d);
   EXPORT void start(const socket_ptr &sock);
-  EXPORT void mark_stoped();
   EXPORT void full_stop(); /// stop thread, clean queue
 
   void set_id(int id) { _async_con_id = id; } /// need to debug output;
@@ -41,7 +40,6 @@ private:
 
   bool _is_stoped;
   std::atomic_bool _begin_stoping_flag;
-
   NetworkMessage::message_size next_message_size;
 
   onDataRecvHandler _on_recv_hadler;

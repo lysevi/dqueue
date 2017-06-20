@@ -14,11 +14,11 @@ public:
 
   enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
-  class ClientConnection  :public std::enable_shared_from_this<ClientConnection> {
+  class ClientConnection : public std::enable_shared_from_this<ClientConnection> {
   public:
     ClientConnection(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
     ~ClientConnection();
-	void start();
+    void start();
     void close();
     void onMessageSended(const NetworkMessage_ptr &d);
     void onNetworkError(const NetworkMessage_ptr &d,
@@ -26,7 +26,7 @@ public:
     void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
     EXPORT void sendData(const NetworkMessage_ptr &d);
     EXPORT int get_id() const { return id; }
-	
+
   private:
     int id;
     socket_ptr sock = nullptr;

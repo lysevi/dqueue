@@ -20,6 +20,7 @@ addons:
       - cpp-6
       - libjemalloc-dev
       - lcov
+      - clang
       
 before_install:
    - pip install --user cpp-coveralls
@@ -49,6 +50,17 @@ matrix:
     - os: linux
       compiler: gcc-6
       env: IS_RELEASE=TRUE CLANG=FALSE
+
+    - os: linux
+      compiler: gcc-6
+      env: SANITIZER=MSAN GCOV=FALSE CLANG=TRUE
+    - os: linux
+      compiler: gcc-6
+      env: SANITIZER=ASAN_UBSAN GCOV=FALSE CLANG=TRUE
+    - os: linux
+      compiler: gcc-6
+      env: IS_RELEASE=TRUE CLANG=TRUE
+
 
 script: 
     - bash .travis/build.sh

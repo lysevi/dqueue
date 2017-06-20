@@ -38,9 +38,6 @@ before_install:
    - cmake --version
    - git submodule init
    - git submodule update
-
-install:
-    - source ci/travis/install-$TRAVIS_OS_NAME.sh
     
 matrix:
   include:

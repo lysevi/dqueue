@@ -35,10 +35,7 @@ template <>
 void EXPORT write_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset,
                                      const std::string &s);
 
-template <typename... T> struct Scheme {
-  std::vector<uint8_t> buffer;
-  size_t offset;
-
+template <class... T> struct Scheme {
   template <typename Head> static void calculate_size_rec(size_t &result, Head &&head) {
     result += get_size_of(head);
   }
@@ -55,55 +52,62 @@ template <typename... T> struct Scheme {
     return result;
   }
 
-  template <typename Head>
-  static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
-    auto szofcur = get_size_of(head);
-    write_value(buffer, offset, head);
-    offset += szofcur;
-  }
+  struct Writer {
+    std::vector<uint8_t> buffer;
+    size_t offset;
 
-  template <typename Head, typename... Tail>
-  static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
-                         Tail &&... t) {
-    auto szofcur = get_size_of(head);
-    write_value(buffer, offset, head);
-    offset += szofcur;
-    write_args(buffer, offset, std::forward<Tail>(t)...);
-  }
+    template <typename Head>
+    static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
+      auto szofcur = get_size_of(head);
+      write_value(buffer, offset, head);
+      offset += szofcur;
+    }
 
-  template <typename Head>
-  static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
-    auto szofcur = get_size_of(head);
-    read_value(buffer, offset, head);
-    offset += szofcur;
-  }
+    template <typename Head, typename... Tail>
+    static void write_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
+                           Tail &&... t) {
+      auto szofcur = get_size_of(head);
+      write_value(buffer, offset, head);
+      offset += szofcur;
+      write_args(buffer, offset, std::forward<Tail>(t)...);
+    }
 
-  template <typename Head, typename... Tail>
-  static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
-                        Tail &&... t) {
-    auto szofcur = get_size_of(head);
-    read_value(buffer, offset, head);
-    offset += szofcur;
-    read_args(buffer, offset, std::forward<Tail>(t)...);
-  }
+    Writer(T &&... t) {
+      offset = 0;
+      auto sz = size_of_args(std::forward<T>(t)...);
+      buffer.resize(sz);
 
-  Scheme() { offset = size_t(0); }
+      write_args(buffer, offset, std::forward<T>(t)...);
+    }
+  };
 
-  Scheme(T &&... t) {
-    offset = 0;
-    auto sz = size_of_args(std::forward<T>(t)...);
-    buffer.resize(sz);
+  struct Reader {
+    std::vector<uint8_t> buffer;
+    size_t offset;
 
-    write_args(buffer, offset, std::forward<T>(t)...);
-  }
+    template <typename Head>
+    static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head) {
+      auto szofcur = get_size_of(head);
+      read_value(buffer, offset, head);
+      offset += szofcur;
+    }
 
-  void init_from_buffer(const std::vector<uint8_t> &buf) { buffer = buf; }
+    template <typename Head, typename... Tail>
+    static void read_args(std::vector<uint8_t> &buffer, size_t &offset, Head &&head,
+                          Tail &&... t) {
+      auto szofcur = get_size_of(head);
+      read_value(buffer, offset, head);
+      offset += szofcur;
+      read_args(buffer, offset, std::forward<Tail>(t)...);
+    }
 
-  void readTo(T &... t) {
-    offset = 0;
-    read_args(buffer, offset, std::forward<T>(t)...);
-  }
+    Reader(const std::vector<uint8_t> &buf) : buffer(buf) { offset = size_t(0); }
+
+    void readTo(T &... t) {
+      offset = 0;
+      read_args(buffer, offset, std::forward<T>(t)...);
+    }
+  };
 };
-
 } // namespace serialisation
 } // namespace dqueue

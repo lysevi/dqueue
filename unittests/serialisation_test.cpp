@@ -25,22 +25,22 @@ TEST_CASE("serialisation.size_of_args") {
 }
 
 TEST_CASE("serialisation.scheme") {
-  EXPECT_EQ(serialisation::Scheme<int>(1).buffer.size(), sizeof(int));
-  serialisation::Scheme<int, int> i2(1, 2);
+  EXPECT_EQ(serialisation::Scheme<int>::Writer(1).buffer.size(), sizeof(int));
+  serialisation::Scheme<int, int>::Writer i2(1, 2);
   EXPECT_EQ(i2.buffer.size(), sizeof(int) * 2);
 
   int unpacked1, unpacked2;
-  serialisation::Scheme<int, int> i2_cpy;
-  i2_cpy.init_from_buffer(i2.buffer);
+  serialisation::Scheme<int, int>::Reader i2_cpy(i2.buffer);
   i2_cpy.readTo(unpacked1, unpacked2);
   EXPECT_EQ(unpacked1, 1);
   EXPECT_EQ(unpacked2, 2);
 
   std::string str = "hello world";
-  serialisation::Scheme<int, std::string> s1(11, std::move(str));
+  serialisation::Scheme<int, std::string>::Writer s1(11, std::move(str));
   EXPECT_EQ(s1.buffer.size(), sizeof(int) + sizeof(uint32_t) + str.size());
   std::string unpackedS;
-  s1.readTo(unpacked1, unpackedS);
+  serialisation::Scheme<int, std::string>::Reader sr1(s1.buffer);
+  sr1.readTo(unpacked1, unpackedS);
   EXPECT_EQ(unpacked1, 11);
   EXPECT_EQ(unpackedS, str);
 }

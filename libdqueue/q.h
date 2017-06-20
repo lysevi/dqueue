@@ -19,10 +19,8 @@ struct Queue {
   int queueId;
   QueueSettings settings;
   uint64_t last_update;
-  uint64_t refs;
   Queue(const QueueSettings &settings_) : settings(settings_) {
     updateTime();
-    refs = 0;
   }
   void updateTime();
 };

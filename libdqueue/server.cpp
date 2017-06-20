@@ -21,7 +21,14 @@ struct Server::Private final : public AbstractServer {
   void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) {}
 
   void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
-                      const boost::system::error_code &err) {}
+                      const boost::system::error_code &err) {
+    bool operation_aborted = err == boost::asio::error::operation_aborted;
+    bool eof = err == boost::asio::error::eof;
+    if (!operation_aborted && !eof) {
+      std::string errm = err.message();
+      logger_fatal("server: ", errm);
+    }
+  }
 
   void onSendToClient(const Node::rawData &rd, int id) {
     // TODO make one allocation in onNewMessage

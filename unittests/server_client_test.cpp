@@ -20,8 +20,8 @@ namespace {
 
 bool server_stop = false;
 std::shared_ptr<Server> server = nullptr;
+boost::asio::io_service service;
 void server_thread() {
-  boost::asio::io_service service;
   AbstractServer::params p;
   p.port = 4040;
   server = std::make_shared<Server>(&service, p);
@@ -35,7 +35,6 @@ void server_thread() {
 }
 
 void testForReconnection(const size_t clients_count) {
-  boost::asio::io_service service;
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
@@ -49,13 +48,11 @@ void testForReconnection(const size_t clients_count) {
   while (server == nullptr || !server->is_started()) {
     logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ",
                 server == nullptr);
-    service.poll_one();
   }
 
   for (auto &c : clients) {
     while (!c->is_connected()) {
       logger_info("server.client.testForReconnection. client not connected");
-      service.poll_one();
     }
   }
 
@@ -63,7 +60,6 @@ void testForReconnection(const size_t clients_count) {
     c->disconnect();
     while (c->is_connected()) {
       logger_info("server.client.testForReconnection. client is still connected");
-      service.poll_one();
     }
   }
 
@@ -86,7 +82,6 @@ TEST_CASE("server.client.10") {
 }
 
 TEST_CASE("server.client.create_queue") {
-  boost::asio::io_service service;
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
@@ -100,7 +95,6 @@ TEST_CASE("server.client.create_queue") {
   client2->asyncConnect();
   while (!client->is_connected() || !client2->is_connected()) {
     logger_info("server.client.create_queue client not connected");
-    service.poll_one();
   }
 
   while (server == nullptr || !server->is_started()) {
@@ -113,7 +107,6 @@ TEST_CASE("server.client.create_queue") {
     if (cds.size() == size_t(2)) {
       break;
     } else {
-      service.poll_one();
       logger_info("server.client.create_queue erver->getClientDescription is empty ",
                   server == nullptr);
     }
@@ -130,7 +123,6 @@ TEST_CASE("server.client.create_queue") {
       break;
     }
     logger_info("server.client.create_queue server->getDescription is empty");
-    service.poll_one();
   }
 
   client->subscribe(qname);
@@ -143,7 +135,6 @@ TEST_CASE("server.client.create_queue") {
       break;
     }
     logger_info("server.client.create_queue server->getDescription is empty");
-    service.poll_one();
   }
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
@@ -158,9 +149,8 @@ TEST_CASE("server.client.create_queue") {
   client2->addHandler(handler);
 
   client->publish(qname, test_data);
-  while (!sended) {
+  while (sended != int(2)) {
     logger_info("server.client.create_queue !sended");
-    service.poll_one();
   }
 
   client->unsubscribe(qname);
@@ -172,7 +162,6 @@ TEST_CASE("server.client.create_queue") {
       break;
     }
     logger_info("server.client.create_queue server->getDescription is not empty");
-    service.poll_one();
   }
 
   server_stop = true;
@@ -183,7 +172,6 @@ TEST_CASE("server.client.create_queue") {
 }
 
 TEST_CASE("server.client.empty_queue-erase") {
-  boost::asio::io_service service;
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
@@ -195,9 +183,9 @@ TEST_CASE("server.client.empty_queue-erase") {
   auto client2 = std::make_shared<Client>(&service, p);
   client->asyncConnect();
   client2->asyncConnect();
+
   while (!client->is_connected() || !client2->is_connected()) {
     logger_info("server.client.empty_queue-erase client not connected");
-    service.poll_one();
   }
 
   while (server == nullptr || !server->is_started()) {
@@ -216,7 +204,6 @@ TEST_CASE("server.client.empty_queue-erase") {
       break;
     }
     logger_info("server.client.empty_queue-erase server->getDescription is empty");
-    service.poll_one();
   }
 
   client->subscribe(qname);
@@ -229,7 +216,6 @@ TEST_CASE("server.client.empty_queue-erase") {
       break;
     }
     logger_info("server.client.empty_queue-erase server->getDescription is empty");
-    service.poll_one();
   }
 
   client->disconnect();
@@ -237,7 +223,6 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   while (client->is_connected() || client2->is_connected()) {
     logger_info("server.client.empty_queue-erase client is still connected");
-    service.poll_one();
   }
 
   while (true) {
@@ -246,7 +231,6 @@ TEST_CASE("server.client.empty_queue-erase") {
       break;
     }
     logger_info("server.client.empty_queue-erase server->getDescription is not empty");
-    service.poll_one();
   }
 
   server_stop = true;

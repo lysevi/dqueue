@@ -7,8 +7,8 @@ using namespace dqueue;
 
 namespace {
 struct QueueListener {
-  bool isowner = false;
-  bool issubscribed = false;
+  bool isowner = false;      // is creator of queue
+  bool issubscribed = false; // if true, owner is subscribed.
 };
 
 } // namespace
@@ -41,10 +41,13 @@ struct Node::Private {
       QueueDescription qd{kv.second.settings};
       {
         std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
-        auto it = _subscriptions.find(kv.second.queueId);
+        auto it = _subscriptions.find(kv.first);
         if (it != _subscriptions.end()) {
-          qd.subscribers.reserve(it->second.size());
-          for (const auto &s : it->second) {
+          auto values = it->second;
+          subscr_sm.unlock();
+
+          qd.subscribers.reserve(values.size());
+          for (const auto &s : values) {
             qd.subscribers.push_back(s.first);
           }
         }
@@ -60,27 +63,25 @@ struct Node::Private {
   }
 
   void eraseClient(const int id) {
-    {
-      std::lock_guard<std::shared_mutex> lg(_clients_locker);
-      _clients.erase(id);
-    }
-    {
-      std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
-      for (auto &s : _subscriptions) {
-        auto it = s.second.find(id);
-        if (it != s.second.end()) {
-          s.second.erase(id);
+    std::lock(_clients_locker, _subscriptions_locker, _queues_locker);
+    _clients.erase(id);
 
-          if (s.second.empty()) {
-            auto q = queueById(s.first);
-            logger_info("server: erase queue ", q.settings.name);
+    for (auto &s : _subscriptions) {
+      auto it = s.second.find(id);
+      if (it != s.second.end()) {
+        s.second.erase(id);
 
-            std::lock_guard<std::shared_mutex> sm(_queues_locker);
-            _queues.erase(q.settings.name);
-          }
+        if (s.second.empty()) {
+          auto qname = s.first;
+          logger_info("server: erase queue ", qname);
+
+          _queues.erase(qname);
         }
       }
     }
+    _clients_locker.unlock();
+    _subscriptions_locker.unlock();
+    _queues_locker.unlock();
   }
 
   std::vector<ClientDescription> getClientsDescription() const {
@@ -93,7 +94,7 @@ struct Node::Private {
         std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
         for (const auto &subscr : _subscriptions) {
           if (subscr.second.find(kv.second.id) != subscr.second.end()) {
-            cd.subscribtions.push_back(queueById(subscr.first).settings.name);
+            cd.subscribtions.push_back(queueByName(subscr.first).settings.name);
           }
         }
       }
@@ -131,10 +132,7 @@ struct Node::Private {
   }
 
   void changeSubscription(SubscribeActions action, std::string queueName, int clientId) {
-    int qId = 0;
-
-    auto q = queueByName(queueName);
-    qId = q.queueId;
+    queueByName(queueName);
 
     {
       std::shared_lock<std::shared_mutex> sm(_clients_locker);
@@ -143,15 +141,15 @@ struct Node::Private {
         THROW_EXCEPTION("node: clientId=", clientId, " does not exists");
       }
     }
-	
-	bool isOwner = action == dqueue::Node::SubscribeActions::Create;
+
+    bool isOwner = action == dqueue::Node::SubscribeActions::Create;
 
     std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
 
     switch (action) {
-	case dqueue::Node::SubscribeActions::Create:
+    case dqueue::Node::SubscribeActions::Create:
     case dqueue::Node::SubscribeActions::Subscribe: {
-      auto clients = &_subscriptions[qId];
+      auto clients = &_subscriptions[queueName];
       QueueListener ql;
       ql.isowner = isOwner;
       auto it = clients->find(clientId);
@@ -160,12 +158,12 @@ struct Node::Private {
           it->second.issubscribed = true;
         }
       } else {
-        _subscriptions[qId][clientId] = ql;
+        _subscriptions[queueName][clientId] = ql;
       }
       break;
     }
     case dqueue::Node::SubscribeActions::Unsubscribe: {
-      _subscriptions[qId].erase(clientId);
+      _subscriptions[queueName].erase(clientId);
       break;
     }
     default:
@@ -180,13 +178,13 @@ struct Node::Private {
 
     {
       std::shared_lock<std::shared_mutex> sl(_subscriptions_locker);
-      local_cpy = _subscriptions[qId];
+      local_cpy = _subscriptions[qname];
     }
 
     for (auto clientId : local_cpy) {
-     /* if (clientId.second.isowner && !clientId.second.issubscribed) {
-        continue;
-      }*/
+      /* if (clientId.second.isowner && !clientId.second.issubscribed) {
+         continue;
+       }*/
       _handler(rd, clientId.first);
     }
   }
@@ -202,7 +200,8 @@ struct Node::Private {
   std::map<int, Client> _clients; // id to client
 
   mutable std::shared_mutex _subscriptions_locker;
-  std::map<int, std::map<int, QueueListener>> _subscriptions; // qId 2 (userId listener)
+  std::map<std::string, std::map<int, QueueListener>>
+      _subscriptions; // queue 2 (userId listener)
 
   Node::dataHandler _handler;
 };

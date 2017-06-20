@@ -11,27 +11,29 @@ using namespace dqueue;
 
 AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
                                                    std::shared_ptr<AbstractServer> s)
-    : id(id_), sock(sock_), _server(s) {
+    : id(id_), sock(sock_), _server(s) {}
 
-  AsyncIO::onDataRecvHandler on_d = [this](const NetworkMessage_ptr &d, bool &cancel) {
-    this->onDataRecv(d, cancel);
+AbstractServer::ClientConnection::~ClientConnection() {}
+
+void AbstractServer::ClientConnection::start() {
+  auto self = shared_from_this();
+  AsyncIO::onDataRecvHandler on_d = [self](const NetworkMessage_ptr &d, bool &cancel) {
+    self->onDataRecv(d, cancel);
   };
 
-  AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
-    this->onNetworkError(d, err);
-    this->close();
+  AsyncIO::onNetworkErrorHandler on_n = [self](auto d, auto err) {
+    self->onNetworkError(d, err);
+    self->close();
   };
 
-  AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
-    this->onMessageSended(d);
+  AsyncIO::onNetworkSuccessSendHandler on_s = [self](auto d) {
+    self->onMessageSended(d);
   };
 
   _async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
   _async_connection->set_id(id);
   _async_connection->start(sock);
 }
-
-AbstractServer::ClientConnection::~ClientConnection() {}
 
 void AbstractServer::ClientConnection::close() {
   if (_async_connection != nullptr) {
@@ -113,6 +115,7 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
 
     if (self->onNewConnection(*new_client.get()) == ON_NEW_CONNECTION_RESULT::ACCEPT) {
       std::lock_guard<std::mutex> lg(self->_locker_connections);
+      new_client->start();
       self->_connections.push_back(new_client);
     }
   }

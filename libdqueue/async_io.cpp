@@ -37,7 +37,9 @@ void AsyncIO::full_stop() {
   try {
     if (auto spt = _sock.lock()) {
       if (spt->is_open()) {
-        spt->close();
+        boost::system::error_code ec;
+        spt->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+        spt->close(ec);
       }
     }
   } catch (...) {

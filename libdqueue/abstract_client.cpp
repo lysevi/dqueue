@@ -3,19 +3,7 @@
 using namespace dqueue;
 
 AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &params)
-    : _service(service), _params(params) {
-  AsyncIO::onDataRecvHandler on_d = [this](auto d, auto cancel) {
-    this->dataRecv(d, cancel);
-  };
-  AsyncIO::onNetworkErrorHandler on_n = [this](auto d, auto err) {
-    this->reconnectOnError(d, err);
-  };
-
-  AsyncIO::onNetworkSuccessSendHandler on_s = [this](auto d) {
-    this->onMessageSended(d);
-  };
-  _async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
-}
+    : _service(service), _params(params) {}
 
 AbstractClient::~AbstractClient() {
   disconnect();
@@ -63,6 +51,17 @@ void AbstractClient::async_connect() {
     if (ec) {
       self->reconnectOnError(nullptr, ec);
     } else {
+      AsyncIO::onDataRecvHandler on_d = [self](auto d, auto cancel) {
+        self->dataRecv(d, cancel);
+      };
+      AsyncIO::onNetworkErrorHandler on_n = [self](auto d, auto err) {
+        self->reconnectOnError(d, err);
+      };
+
+      AsyncIO::onNetworkSuccessSendHandler on_s = [self](auto d) {
+        self->onMessageSended(d);
+      };
+      self->_async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
       self->_async_connection->start(self->_socket);
       self->isConnected = true;
       self->onConnect();

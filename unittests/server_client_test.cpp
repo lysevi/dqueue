@@ -184,12 +184,11 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   auto client = std::make_shared<Client>(&service, p);
   auto client2 = std::make_shared<Client>(&service, p);
-  client->asyncConnect();
-  client2->asyncConnect();
 
-  while (!client->is_connected() || !client2->is_connected()) {
-    logger_info("server.client.empty_queue-erase client not connected");
-  }
+  client->connect();
+  client2->connect();
+  EXPECT_TRUE(client->is_connected());
+  EXPECT_TRUE(client2->is_connected());
 
   while (server == nullptr || !server->is_started()) {
     logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",

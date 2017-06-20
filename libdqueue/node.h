@@ -13,9 +13,10 @@ public:
   struct QueueDescription {
     QueueSettings settings;
     std::vector<int> subscribers;
-	QueueDescription() = default;
-	QueueDescription(const QueueDescription&other) = default;
-	QueueDescription(const QueueSettings&settings_) :settings(settings_) {}
+    QueueDescription() = default;
+    QueueDescription(const QueueDescription &other)
+        : settings(other.settings), subscribers(other.subscribers) {}
+    QueueDescription(const QueueSettings &settings_) : settings(settings_) {}
   };
 
   struct Client {

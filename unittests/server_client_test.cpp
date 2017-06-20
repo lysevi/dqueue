@@ -158,7 +158,7 @@ TEST_CASE("server.client.create_queue") {
 
   while (true) {
     auto ds = server->getDescription();
-    if (ds.empty() || !ds.empty() && ds.front().subscribers.empty()) {
+    if (ds.empty()) {
       break;
     }
     logger_info("server.client.create_queue server->getDescription is not empty");
@@ -227,7 +227,7 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   while (true) {
     auto ds = server->getDescription();
-    if (ds.empty() || !ds.empty() && ds.front().subscribers.empty()) {
+    if (ds.empty() ) {
       break;
     }
     logger_info("server.client.empty_queue-erase server->getDescription is not empty");

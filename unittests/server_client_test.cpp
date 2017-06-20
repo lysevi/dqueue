@@ -16,11 +16,11 @@ using namespace boost::asio;
 using namespace dqueue;
 using namespace dqueue::utils;
 
-namespace {
+namespace server_client_test {
 
 bool server_stop = false;
-std::shared_ptr<Server> server = nullptr;
-boost::asio::io_service service;
+static std::shared_ptr<Server> server = nullptr;
+static boost::asio::io_service service;
 void server_thread() {
   AbstractServer::params p;
   p.port = 4040;
@@ -69,19 +69,21 @@ void testForReconnection(const size_t clients_count) {
   }
   t.join();
 }
-} // namespace
+} // namespace server_client_test
 
 TEST_CASE("server.client.1") {
   const size_t connections_count = 1;
-  testForReconnection(connections_count);
+  server_client_test::testForReconnection(connections_count);
 }
 
 TEST_CASE("server.client.10") {
   const size_t connections_count = 10;
-  testForReconnection(connections_count);
+  server_client_test::testForReconnection(connections_count);
 }
 
 TEST_CASE("server.client.create_queue") {
+  using namespace server_client_test;
+
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
@@ -172,6 +174,7 @@ TEST_CASE("server.client.create_queue") {
 }
 
 TEST_CASE("server.client.empty_queue-erase") {
+  using namespace server_client_test;
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
@@ -227,7 +230,7 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   while (true) {
     auto ds = server->getDescription();
-    if (ds.empty() ) {
+    if (ds.empty()) {
       break;
     }
     logger_info("server.client.empty_queue-erase server->getDescription is not empty");

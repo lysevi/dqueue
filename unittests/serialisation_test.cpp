@@ -12,15 +12,16 @@ using namespace dqueue::utils;
 using namespace dqueue::queries;
 
 TEST_CASE("serialisation.size_of_args") {
-  EXPECT_EQ(serialisation::size_of_args(int(1)), sizeof(int));
-  auto sz = serialisation::size_of_args(int(1), int(1));
+  EXPECT_EQ(serialisation::Scheme<int>::size_of_args(int(1)), sizeof(int));
+  auto sz = serialisation::Scheme<int,int>::size_of_args(int(1), int(1));
   EXPECT_EQ(sz, sizeof(int) * 2);
 
-  sz = serialisation::size_of_args(int(1), int(1), double(1.0));
+  sz = serialisation::Scheme<int, int, double>::size_of_args(int(1), int(1), double(1.0));
   EXPECT_EQ(sz, sizeof(int) * 2 + sizeof(double));
 
   std::string str = "hello world";
-  EXPECT_EQ(serialisation::size_of_args(str), sizeof(uint32_t) + str.size());
+  sz = serialisation::Scheme<std::string>::size_of_args(std::move(str));
+  EXPECT_EQ(sz, sizeof(uint32_t) + str.size());
 }
 
 TEST_CASE("serialisation.scheme") {

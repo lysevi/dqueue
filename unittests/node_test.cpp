@@ -14,11 +14,6 @@ TEST_CASE("node.queue_subscription") {
   };
 
   Node n(settings, dhandler);
-  n.createQueue(QueueSettings("q1"));
-  n.createQueue(QueueSettings("q2"));
-  n.createQueue(QueueSettings("q3"));
-  auto descr = n.getQueuesDescription();
-  EXPECT_EQ(descr.size(), size_t(3));
 
   Node::Client cl1{1};
   Node::Client cl2{2};
@@ -28,6 +23,13 @@ TEST_CASE("node.queue_subscription") {
   n.addClient(cl3);
   auto cldescr = n.getClientsDescription();
   EXPECT_EQ(cldescr.size(), size_t(3));
+
+  
+  n.createQueue(QueueSettings("q1"), 1);
+  n.createQueue(QueueSettings("q2"), 1);
+  n.createQueue(QueueSettings("q3"), 2);
+  auto descr = n.getQueuesDescription();
+  EXPECT_EQ(descr.size(), size_t(3));
 
   n.changeSubscription(Node::SubscribeActions::Subscribe, "q1", 1);
   n.changeSubscription(Node::SubscribeActions::Subscribe, "q2", 1);

@@ -88,6 +88,7 @@ void AbstractServer::erase_client_description(const ClientConnection *client) {
   auto it = std::find_if(_connections.begin(), _connections.end(),
                          [client](auto c) { return c->get_id() == client->get_id(); });
   ENSURE(it != _connections.end());
+  onDisconnect(*client);
   _connections.erase(it);
 }
 

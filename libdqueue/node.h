@@ -7,7 +7,7 @@
 namespace dqueue {
 class Node {
 public:
-  enum class SubscribeActions : uint8_t { Subscribe, Unsubscribe };
+  enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
 
   struct Settings {};
   struct QueueDescription {
@@ -28,17 +28,17 @@ public:
 
   EXPORT Node(const Settings &settigns, dataHandler dh);
   EXPORT ~Node();
-  EXPORT void createQueue(const QueueSettings &qsettings);
+  EXPORT void createQueue(const QueueSettings &qsettings, const int ownerId);
   EXPORT std::vector<QueueDescription> getQueuesDescription() const;
 
   EXPORT void addClient(const Client &c);
+  EXPORT void eraseClient(const int id);
   EXPORT std::vector<ClientDescription> getClientsDescription() const;
 
   EXPORT void changeSubscription(SubscribeActions action, std::string queueName,
                                  int clientId);
 
   EXPORT void publish(const std::string &qname, const rawData &rd);
-
 protected:
   struct Private;
   std::unique_ptr<Private> _impl;

@@ -5,20 +5,32 @@
 
 using namespace dqueue;
 
+namespace {
+struct QueueListener {
+  bool isowner = false;
+  bool issubscribed = false;
+};
+
+} // namespace
+
 struct Node::Private {
   Private(const Settings &settigns, dataHandler dh) : _settigns(settigns) {
     _handler = dh;
     nextQueueId = 0;
   }
 
-  void createQueue(const QueueSettings &qsettings) {
+  void createQueue(const QueueSettings &qsettings, const int ownerId) {
     ENSURE(!qsettings.name.empty());
 
-    std::lock_guard<std::shared_mutex> lg(_queues_locker);
+    clientById(ownerId);
+    {
+      std::lock_guard<std::shared_mutex> lg(_queues_locker);
 
-    Queue new_q(qsettings);
-    new_q.queueId = nextQueueId++;
-    _queues.emplace(std::make_pair(new_q.settings.name, new_q));
+      Queue new_q(qsettings);
+      new_q.queueId = nextQueueId++;
+      _queues.emplace(std::make_pair(new_q.settings.name, new_q));
+    }
+    changeSubscription(Node::SubscribeActions::Create, qsettings.name, ownerId);
   }
 
   std::vector<QueueDescription> getDescription() const {
@@ -33,7 +45,7 @@ struct Node::Private {
         if (it != _subscriptions.end()) {
           qd.subscribers.reserve(it->second.size());
           for (const auto &s : it->second) {
-            qd.subscribers.push_back(s);
+            qd.subscribers.push_back(s.first);
           }
         }
       }
@@ -45,6 +57,30 @@ struct Node::Private {
   void addClient(const Client &c) {
     std::lock_guard<std::shared_mutex> lg(_clients_locker);
     _clients[c.id] = c;
+  }
+
+  void eraseClient(const int id) {
+    {
+      std::lock_guard<std::shared_mutex> lg(_clients_locker);
+      _clients.erase(id);
+    }
+    {
+      std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
+      for (auto &s : _subscriptions) {
+        auto it = s.second.find(id);
+        if (it != s.second.end()) {
+          s.second.erase(id);
+
+          if (s.second.empty()) {
+            auto q = queueById(s.first);
+            logger_info("server: erase queue ", q.settings.name);
+
+            std::lock_guard<std::shared_mutex> sm(_queues_locker);
+            _queues.erase(q.settings.name);
+          }
+        }
+      }
+    }
   }
 
   std::vector<ClientDescription> getClientsDescription() const {
@@ -85,6 +121,15 @@ struct Node::Private {
     return it->second;
   }
 
+  Client clientById(int id) {
+    std::shared_lock<std::shared_mutex> sm(_clients_locker);
+    auto it = _clients.find(id);
+    if (it == _clients.end()) {
+      THROW_EXCEPTION("server: clientById not found #", id);
+    }
+    return it->second;
+  }
+
   void changeSubscription(SubscribeActions action, std::string queueName, int clientId) {
     int qId = 0;
 
@@ -98,11 +143,25 @@ struct Node::Private {
         THROW_EXCEPTION("node: clientId=", clientId, " does not exists");
       }
     }
+	
+	bool isOwner = action == dqueue::Node::SubscribeActions::Create;
 
     std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
+
     switch (action) {
+	case dqueue::Node::SubscribeActions::Create:
     case dqueue::Node::SubscribeActions::Subscribe: {
-      _subscriptions[qId].insert(clientId);
+      auto clients = &_subscriptions[qId];
+      QueueListener ql;
+      ql.isowner = isOwner;
+      auto it = clients->find(clientId);
+      if (it != clients->end()) {
+        if (!isOwner) {
+          it->second.issubscribed = true;
+        }
+      } else {
+        _subscriptions[qId][clientId] = ql;
+      }
       break;
     }
     case dqueue::Node::SubscribeActions::Unsubscribe: {
@@ -117,7 +176,7 @@ struct Node::Private {
 
   void publish(const std::string &qname, const Node::rawData &rd) {
     int qId = queueByName(qname).queueId;
-    std::set<int> local_cpy;
+    std::map<int, QueueListener> local_cpy;
 
     {
       std::shared_lock<std::shared_mutex> sl(_subscriptions_locker);
@@ -125,12 +184,16 @@ struct Node::Private {
     }
 
     for (auto clientId : local_cpy) {
-      _handler(rd, clientId);
+     /* if (clientId.second.isowner && !clientId.second.issubscribed) {
+        continue;
+      }*/
+      _handler(rd, clientId.first);
     }
   }
 
   Settings _settigns;
 
+  // TODO all dict is name2value. not id2value.
   mutable std::shared_mutex _queues_locker;
   std::map<std::string, Queue> _queues; // name to queue
   int nextQueueId;
@@ -139,7 +202,7 @@ struct Node::Private {
   std::map<int, Client> _clients; // id to client
 
   mutable std::shared_mutex _subscriptions_locker;
-  std::map<int, std::set<int>> _subscriptions; // qId 2 userId
+  std::map<int, std::map<int, QueueListener>> _subscriptions; // qId 2 (userId listener)
 
   Node::dataHandler _handler;
 };
@@ -151,8 +214,8 @@ Node::~Node() {
   _impl = nullptr;
 }
 
-void Node::createQueue(const QueueSettings &qsettings) {
-  _impl->createQueue(qsettings);
+void Node::createQueue(const QueueSettings &qsettings, const int ownerId) {
+  _impl->createQueue(qsettings, ownerId);
 }
 
 std::vector<Node::QueueDescription> Node::getQueuesDescription() const {
@@ -161,6 +224,10 @@ std::vector<Node::QueueDescription> Node::getQueuesDescription() const {
 
 void Node::addClient(const Client &c) {
   _impl->addClient(c);
+}
+
+void Node::eraseClient(const int id) {
+  _impl->eraseClient(id);
 }
 
 std::vector<Node::ClientDescription> Node::getClientsDescription() const {

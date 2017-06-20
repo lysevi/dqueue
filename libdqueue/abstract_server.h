@@ -18,13 +18,14 @@ public:
   public:
     ClientConnection(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
     ~ClientConnection();
-	void close();
+    void close();
     void onMessageSended(const NetworkMessage_ptr &d);
     void onNetworkError(const NetworkMessage_ptr &d,
                         const boost::system::error_code &err);
     void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
     EXPORT void sendData(const NetworkMessage_ptr &d);
     EXPORT int get_id() const { return id; }
+
   private:
     int id;
     socket_ptr sock = nullptr;
@@ -39,7 +40,7 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
-  EXPORT void sendTo(int id, NetworkMessage_ptr&d);
+  EXPORT void sendTo(int id, NetworkMessage_ptr &d);
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
   virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
@@ -47,11 +48,12 @@ public:
   virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
                             bool &cancel) = 0;
   virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) = 0;
-  
+  virtual void onDisconnect(const ClientConnection &i) = 0;
+
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);
-  void erase_client_description(const ClientConnection*client);
+  void erase_client_description(const ClientConnection *client);
 
 protected:
   boost::asio::io_service *_service = nullptr;
@@ -63,4 +65,4 @@ protected:
   params _params;
   bool _is_stoped = false;
 };
-}
+} // namespace dqueue

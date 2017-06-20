@@ -112,8 +112,15 @@ struct testable_server : public AbstractServer {
   void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
 
-  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &) override {
+  std::set<int> connections;
+
+  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &c) override {
+    connections.insert(c.get_id());
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
+  }
+
+  void onDisconnect(const ClientConnection &i) override {
+	  connections.erase(i.get_id());
   }
 };
 
@@ -164,6 +171,7 @@ void testForReconnection(const size_t clients_count) {
     }
   }
   EXPECT_TRUE(server->success);
+  EXPECT_EQ(server->connections.size(), clients_count);
   server_stop = true;
   while (server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -198,6 +206,8 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
+  EXPECT_TRUE(server->connections.empty());
+
   // stop server
   server_stop = true;
   while (server != nullptr) {

@@ -11,7 +11,7 @@ namespace queries {
 
 struct ChangeSubscribe {
   std::string qname;
-
+  
   ChangeSubscribe(const std::string &queue) { qname = queue; }
 
   ChangeSubscribe(const NetworkMessage_ptr &nd) {

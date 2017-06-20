@@ -27,7 +27,7 @@ struct Server::Private final : public AbstractServer {
     // TODO make one allocation in onNewMessage
     queries::Publish pub("client", rd);
     auto nd = pub.toNetworkMessage();
-	this->sendTo(id, nd);
+    this->sendTo(id, nd);
   }
 
   void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d, bool &cancel) {
@@ -37,7 +37,7 @@ struct Server::Private final : public AbstractServer {
     case (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE: {
       logger_info("server: #", i.get_id(), " create queue");
       auto qs = QueueSettings::fromNetworkMessage(d);
-      _node->createQueue(qs);
+      _node->createQueue(qs, i.get_id());
       break;
     }
     case (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE: {
@@ -70,6 +70,10 @@ struct Server::Private final : public AbstractServer {
     cl.id = i.get_id();
     _node->addClient(cl);
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
+  }
+
+  void onDisconnect(const ClientConnection &i) override {
+    _node->eraseClient(i.get_id());
   }
 
   std::vector<Node::QueueDescription> getDescription() const {

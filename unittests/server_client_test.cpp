@@ -59,14 +59,14 @@ void testForReconnection(const size_t clients_count) {
     }
   }
 
-  for (auto&c : clients) {
-	  c->disconnect();
-	  while (c->is_connected()) {
-		  logger_info("server.client.testForReconnection. client is still connected");
-		  service.poll_one();
-	  }
+  for (auto &c : clients) {
+    c->disconnect();
+    while (c->is_connected()) {
+      logger_info("server.client.testForReconnection. client is still connected");
+      service.poll_one();
+    }
   }
-  
+
   server_stop = true;
   while (server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -95,8 +95,10 @@ TEST_CASE("server.client.create_queue") {
   std::thread t(server_thread);
 
   auto client = std::make_shared<Client>(&service, p);
+  auto client2 = std::make_shared<Client>(&service, p);
   client->asyncConnect();
-  while (!client->is_connected()) {
+  client2->asyncConnect();
+  while (!client->is_connected() || !client2->is_connected()) {
     logger_info("server.client.create_queue client not connected");
     service.poll_one();
   }
@@ -108,7 +110,7 @@ TEST_CASE("server.client.create_queue") {
 
   while (true) {
     auto cds = server->getClientDescription();
-    if (cds.size() == size_t(1)) {
+    if (cds.size() == size_t(2)) {
       break;
     } else {
       service.poll_one();
@@ -132,6 +134,7 @@ TEST_CASE("server.client.create_queue") {
   }
 
   client->subscribe(qname);
+  client2->subscribe(qname);
 
   while (true) {
     auto ds = server->getDescription();
@@ -144,14 +147,15 @@ TEST_CASE("server.client.create_queue") {
   }
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
-  bool sended = false;
+  int sended = 0;
   Client::dataHandler handler = [&test_data, &sended](const Queue &q,
                                                       const std::vector<uint8_t> &data) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), data.begin(), data.end()));
-    sended = true;
+    sended++;
   };
 
   client->addHandler(handler);
+  client2->addHandler(handler);
 
   client->publish(qname, test_data);
   while (!sended) {
@@ -160,6 +164,7 @@ TEST_CASE("server.client.create_queue") {
   }
 
   client->unsubscribe(qname);
+  client2->disconnect();
 
   while (true) {
     auto ds = server->getDescription();
@@ -170,7 +175,79 @@ TEST_CASE("server.client.create_queue") {
     service.poll_one();
   }
 
- 
+  server_stop = true;
+  while (server != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  t.join();
+}
+
+TEST_CASE("server.client.empty_queue-erase") {
+  boost::asio::io_service service;
+  AbstractClient::Params p;
+  p.host = "localhost";
+  p.port = 4040;
+
+  server_stop = false;
+  std::thread t(server_thread);
+
+  auto client = std::make_shared<Client>(&service, p);
+  auto client2 = std::make_shared<Client>(&service, p);
+  client->asyncConnect();
+  client2->asyncConnect();
+  while (!client->is_connected() || !client2->is_connected()) {
+    logger_info("server.client.empty_queue-erase client not connected");
+    service.poll_one();
+  }
+
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  auto qname = "server.client.empty_queue-erase";
+  QueueSettings qsettings1(qname);
+  client->createQueue(qsettings1);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty()) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    service.poll_one();
+  }
+
+  client->subscribe(qname);
+  client2->subscribe(qname);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty() && !ds.front().subscribers.empty()) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    service.poll_one();
+  }
+
+  client->disconnect();
+  client2->disconnect();
+
+  while (client->is_connected() || client2->is_connected()) {
+    logger_info("server.client.empty_queue-erase client is still connected");
+    service.poll_one();
+  }
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (ds.empty() || !ds.empty() && ds.front().subscribers.empty()) {
+      break;
+    }
+    logger_info("server.client.empty_queue-erase server->getDescription is not empty");
+    service.poll_one();
+  }
 
   server_stop = true;
   while (server != nullptr) {

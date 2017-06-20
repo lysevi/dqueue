@@ -3,6 +3,7 @@
 #include <libdqueue/exports.h>
 #include <cstddef>
 #include <cstring>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -30,11 +31,12 @@ void read_value(std::vector<uint8_t> &buffer, size_t &offset, S &s) {
 }
 
 template <>
-EXPORT void read_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset, std::string &s) {
-	uint32_t len = 0;
-	std::memcpy(&len, buffer.data() + offset, sizeof(uint32_t));
-	s.resize(len);
-	std::memcpy(&s[0], buffer.data() + offset + sizeof(uint32_t), size_t(len));
+EXPORT void read_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset,
+                                    std::string &s) {
+  uint32_t len = 0;
+  std::memcpy(&len, buffer.data() + offset, sizeof(uint32_t));
+  s.resize(len);
+  std::memcpy(&s[0], buffer.data() + offset + sizeof(uint32_t), size_t(len));
 }
 
 template <>

@@ -10,6 +10,7 @@ public:
   enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
 
   struct Settings {};
+
   struct QueueDescription {
     QueueSettings settings;
     std::vector<int> subscribers;
@@ -17,6 +18,13 @@ public:
     QueueDescription(const QueueDescription &other)
         : settings(other.settings), subscribers(other.subscribers) {}
     QueueDescription(const QueueSettings &settings_) : settings(settings_) {}
+    QueueDescription &operator=(const QueueDescription &other) {
+      if (this != &other) {
+        settings = other.settings;
+        subscribers = other.subscribers;
+      }
+      return *this;
+    }
   };
 
   struct Client {

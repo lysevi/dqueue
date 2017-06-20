@@ -1,6 +1,9 @@
 sudo: required
 dist: trusty
+
 language: cpp
+
+group: edge
 
 cache:
   directories:
@@ -22,6 +25,10 @@ addons:
       - lcov
       - clang
       
+compiler:
+    - gcc
+    - clang
+    
 before_install:
    - pip install --user cpp-coveralls
    - cd ${TRAVIS_BUILD_DIR}
@@ -36,6 +43,9 @@ before_install:
    - git submodule init
    - git submodule update
 
+install:
+    - source ci/travis/install-$TRAVIS_OS_NAME.sh
+    
 matrix:
   include:
     - os: linux
@@ -52,14 +62,14 @@ matrix:
       env: IS_RELEASE=TRUE CLANG=FALSE
 
     - os: linux
-      compiler: gcc-6
-      env: SANITIZER=MSAN GCOV=FALSE CLANG=TRUE
+      compiler: clang
+      env: CLANG=TRUE SANITIZER=MSAN GCOV=FALSE
     - os: linux
-      compiler: gcc-6
-      env: SANITIZER=ASAN_UBSAN GCOV=FALSE CLANG=TRUE
+      compiler: clang
+      env:  CLANG=TRUE SANITIZER=ASAN_UBSAN GCOV=FALSE
     - os: linux
-      compiler: gcc-6
-      env: IS_RELEASE=TRUE CLANG=TRUE
+      compiler: clang
+      env:  CLANG=TRUE IS_RELEASE=TRUE
 
 
 script: 

@@ -54,15 +54,15 @@ matrix:
       compiler: gcc-6
       env: IS_RELEASE=TRUE CLANG=FALSE
 
-    - os: linux
-      compiler: clang
-      env: CLANG=TRUE SANITIZER=MSAN GCOV=FALSE
-    - os: linux
-      compiler: clang
-      env:  CLANG=TRUE SANITIZER=ASAN_UBSAN GCOV=FALSE
-    - os: linux
-      compiler: clang
-      env:  CLANG=TRUE IS_RELEASE=TRUE
+#    - os: linux
+#      compiler: clang
+#      env: CLANG=TRUE SANITIZER=MSAN GCOV=FALSE
+#    - os: linux
+#      compiler: clang
+#      env:  CLANG=TRUE SANITIZER=ASAN_UBSAN GCOV=FALSE
+#    - os: linux
+#      compiler: clang
+#      env:  CLANG=TRUE IS_RELEASE=TRUE
 
 
 script: 

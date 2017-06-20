@@ -43,14 +43,14 @@ template <>
 void EXPORT write_value<std::string>(std::vector<uint8_t> &buffer, size_t &offset,
                                      const std::string &s);
 
-template <typename Head, typename... Tail>
-void calculate_size_rec(size_t &result, Head &&head, Tail &&... t) {
-  result += get_size_of(head);
-  calculate_size_rec(result, std::forward<Tail>(t)...);
+template <typename Head> void calculate_size_rec(size_t &result, Head &&head) {
+	result += get_size_of(head);
 }
 
-template <typename Head> void calculate_size_rec(size_t &result, Head &&head) {
-  result += get_size_of(head);
+template <typename Head, typename... Tail>
+void calculate_size_rec(size_t &result, Head &&head, Tail &&... t) {
+  result += get_size_of(std::forward<Head>(head));
+  calculate_size_rec(result, std::forward<Tail>(t)...);
 }
 
 template <typename... Args> size_t size_of_args(Args &&... args) {

@@ -38,7 +38,7 @@ struct Node::Private {
     std::vector<QueueDescription> result(_queues.size());
     size_t pos = 0;
     for (auto kv : _queues) {
-      QueueDescription qd{kv.second.settings};
+      QueueDescription qd(kv.second.settings);
       {
         std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
         auto it = _subscriptions.find(kv.first);
@@ -89,7 +89,7 @@ struct Node::Private {
     std::vector<ClientDescription> result(_clients.size());
     size_t pos = 0;
     for (auto kv : _clients) {
-      ClientDescription cd{kv.second.id};
+      ClientDescription cd(kv.second.id);
       {
         std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
         for (const auto &subscr : _subscriptions) {
@@ -166,9 +166,8 @@ struct Node::Private {
       _subscriptions[queueName].erase(clientId);
       break;
     }
-    default:
-      THROW_EXCEPTION("node: unknow action:", (int)action);
-      break;
+    /*default:
+      THROW_EXCEPTION("node: unknow action:", (int)action);*/
     }
   }
 

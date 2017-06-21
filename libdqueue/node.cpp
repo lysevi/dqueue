@@ -68,12 +68,13 @@ struct Node::Private {
     std::lock(_clients_locker, _subscriptions_locker, _queues_locker);
     _clients.erase(id);
 
+    // erase _subscriptions
     for (auto &s : _subscriptions) {
       auto it = s.second.find(id);
       if (it != s.second.end()) {
         s.second.erase(id);
 
-        // empty or server only
+        // erase empty queue.
         bool must_be_removed = s.second.empty();
         if (!must_be_removed) {
           auto subscr_it = s.second.find(ServerID);
@@ -82,6 +83,7 @@ struct Node::Private {
             must_be_removed = !subscr_it->second.isowner;
           }
         }
+
         if (must_be_removed) {
           auto qname = s.first;
           logger_info("server: erase queue ", qname);

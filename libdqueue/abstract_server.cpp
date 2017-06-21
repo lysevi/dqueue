@@ -126,7 +126,6 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
 }
 
 void AbstractServer::stopServer() {
-  ENSURE(!_is_stoped);
   if (!_is_stoped) {
     logger("abstract_server::stopServer()");
     _acc->close();

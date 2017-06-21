@@ -3,19 +3,18 @@
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/q.h>
+#include <libdqueue/users.h>
 
 namespace dqueue {
 class Node {
 public:
-  static const int ServerID = std::numeric_limits<int>::max();
-
   enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
 
   struct Settings {};
 
   struct QueueDescription {
     QueueSettings settings;
-    std::vector<int> subscribers;
+    std::vector<Id> subscribers;
     QueueDescription() = default;
     QueueDescription(const QueueDescription &other)
         : settings(other.settings), subscribers(other.subscribers) {}
@@ -29,29 +28,16 @@ public:
     }
   };
 
-  struct Client {
-    int id;
-  };
 
-  struct ClientDescription {
-    int id;
-    std::vector<std::string> subscribtions;
-
-    ClientDescription() : id(std::numeric_limits<int>::max()) {}
-    ClientDescription(int id_) : id(id_) {}
-  };
-
-  EXPORT Node(const Settings &settigns, DataHandler dh);
+  EXPORT Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub);
   EXPORT ~Node();
-  EXPORT void createQueue(const QueueSettings &qsettings, const int ownerId);
+  EXPORT void createQueue(const QueueSettings &qsettings, const Id ownerId);
   EXPORT std::vector<QueueDescription> getQueuesDescription() const;
 
-  EXPORT void addClient(const Client &c);
-  EXPORT void eraseClient(const int id);
-  EXPORT std::vector<ClientDescription> getClientsDescription() const;
-
+  EXPORT void eraseClient(const Id id);
+  
   EXPORT void changeSubscription(SubscribeActions action, const std::string &queueName,
-                                 int clientId);
+	  Id clientId);
 
   EXPORT void publish(const std::string &qname, const rawData &rd);
 

@@ -1,5 +1,6 @@
 #include <libdqueue/node.h>
 #include <libdqueue/queries.h>
+#include <libdqueue/users.h>
 #include <libdqueue/server.h>
 
 #include <functional>
@@ -11,12 +12,13 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
   Private(boost::asio::io_service *service, AbstractServer::params &p)
       : AbstractServer(service, p) {
     DataHandler dhandler = [this](const std::string &queueName, const rawData &rd,
-                                  int id) { this->onSendToClient(queueName, rd, id); };
-    _node = std::make_unique<Node>(Node::Settings(), dhandler);
-    _node->addClient({Node::ServerID});
+		Id id) { this->onSendToClient(queueName, rd, id); };
+	_users = UserBase::create();
+    _node = std::make_unique<Node>(Node::Settings(), dhandler, _users);
+	_users->append({"server", ServerID});
   }
 
-  virtual ~Private() { _node->eraseClient(Node::ServerID); }
+  virtual ~Private() { _node->eraseClient(ServerID); }
 
   void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) {}
 
@@ -30,8 +32,8 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
     }
   }
 
-  void onSendToClient(const std::string &queueName, const rawData &rd, int id) {
-    if (id == Node::ServerID) {
+  void onSendToClient(const std::string &queueName, const rawData &rd, Id id) {
+    if (id == ServerID) {
       if (_dh != nullptr) {
         _dh(queueName, rd, id);
       }
@@ -80,36 +82,38 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
 
   ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) {
     // TODO logic must be implemented in call code
-    Node::Client cl;
+    User cl;
     cl.id = i.get_id();
-    _node->addClient(cl);
+	cl.login = "not set";
+	_users->append(cl);
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 
   void onDisconnect(const ClientConnection &i) override {
-    _node->eraseClient(i.get_id());
+    _users->erase(i.get_id());
+	_node->eraseClient(i.get_id());
   }
 
   std::vector<Node::QueueDescription> getDescription() const {
     return _node->getQueuesDescription();
   }
 
-  std::vector<Node::ClientDescription> getClientDescription() const {
-    return _node->getClientsDescription();
+  std::vector<User> users() const {
+	  return _users->users();
   }
 
   void createQueue(const QueueSettings &settings) override {
-    _node->createQueue(settings, Node::ServerID);
+    _node->createQueue(settings, ServerID);
   }
 
   void addHandler(DataHandler dh) { _dh = dh; }
 
   void subscribe(const std::string &qname) override {
-    _node->changeSubscription(Node::SubscribeActions::Subscribe, qname, Node::ServerID);
+    _node->changeSubscription(Node::SubscribeActions::Subscribe, qname, ServerID);
   }
 
   void unsubscribe(const std::string &qname) override {
-    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, qname, Node::ServerID);
+    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, qname, ServerID);
   }
 
   virtual void publish(const std::string &qname, const rawData &data) override {
@@ -118,6 +122,7 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
 
   std::unique_ptr<Node> _node;
   DataHandler _dh;
+  UserBase_Ptr _users;
 };
 
 Server::Server(boost::asio::io_service *service, AbstractServer::params &p)
@@ -143,8 +148,8 @@ std::vector<Node::QueueDescription> Server::getDescription() const {
   return _impl->getDescription();
 }
 
-std::vector<Node::ClientDescription> Server::getClientDescription() const {
-  return _impl->getClientDescription();
+std::vector<User> Server::users() const {
+	return _impl->users();
 }
 
 void Server::addHandler(DataHandler dh) {

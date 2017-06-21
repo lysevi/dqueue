@@ -26,8 +26,6 @@ public:
   EXPORT void start(const socket_ptr &sock);
   EXPORT void full_stop(); /// stop thread, clean queue
 
-  void set_id(int id) { _async_con_id = id; } /// need to debug output;
-  int id() const { return _async_con_id; }
   int queue_size() const { return _messages_to_send; }
 
 private:
@@ -35,7 +33,6 @@ private:
 
 private:
   std::atomic_int _messages_to_send;
-  int _async_con_id; // need to debug output;
   socket_weak _sock;
 
   bool _is_stoped;

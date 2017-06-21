@@ -6,7 +6,6 @@ using namespace dqueue;
 
 AsyncIO::AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr,
                  onNetworkSuccessSendHandler onSended) {
-  _async_con_id = 0;
   _messages_to_send = 0;
   _is_stoped = true;
   _on_recv_hadler = onRecv;
@@ -85,7 +84,7 @@ void AsyncIO::readNextAsync() {
         ptr->_on_error_handler(nullptr, err);
       } else {
         if (read_bytes != NetworkMessage::SIZE_OF_MESSAGE_SIZE) {
-          THROW_EXCEPTION("exception on async readMarker. #", ptr->_async_con_id,
+          THROW_EXCEPTION("exception on async readMarker. ",
                           " - wrong marker size: expected ",
                           NetworkMessage::SIZE_OF_MESSAGE_SIZE, " readed ", read_bytes);
         }
@@ -101,7 +100,7 @@ void AsyncIO::readNextAsync() {
             try {
               ptr->_on_recv_hadler(d, cancel_flag);
             } catch (std::exception &ex) {
-              THROW_EXCEPTION("exception on async readData. #", ptr->_async_con_id, " - ",
+              THROW_EXCEPTION("exception on async readData. - ",
                               ex.what());
             }
 

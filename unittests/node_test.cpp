@@ -7,24 +7,24 @@ using namespace dqueue::utils;
 
 TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
-  std::set<int> sends;
+  std::set<Id> sends;
 
   DataHandler dhandler = [&sends](const std::string &queueName,
-                                        const rawData &, int id) {
+                                        const rawData &, Id id) {
     EXPECT_TRUE(!queueName.empty());
     sends.insert(id);
   };
 
-  Node n(settings, dhandler);
+  auto ub = UserBase::create();
 
-  Node::Client cl1{1};
-  Node::Client cl2{2};
-  Node::Client cl3{3};
-  n.addClient(cl1);
-  n.addClient(cl2);
-  n.addClient(cl3);
-  auto cldescr = n.getClientsDescription();
-  EXPECT_EQ(cldescr.size(), size_t(3));
+  Node n(settings, dhandler, ub);
+
+  User cl1{"1", 1};
+  User cl2{ "2", 2};
+  User cl3{ "3", 3};
+  ub->append(cl1);
+  ub->append(cl2);
+  ub->append(cl3);
 
   n.createQueue(QueueSettings("q1"), 1);
   n.createQueue(QueueSettings("q2"), 1);
@@ -38,30 +38,6 @@ TEST_CASE("node.queue_subscription") {
   n.changeSubscription(Node::SubscribeActions::Subscribe, "q3", 2);
   n.changeSubscription(Node::SubscribeActions::Subscribe, "q3", 3);
   n.changeSubscription(Node::SubscribeActions::Unsubscribe, "q3", 1);
-
-  cldescr = n.getClientsDescription();
-  EXPECT_EQ(cldescr.size(), size_t(3));
-  for (auto cd : cldescr) {
-    if (cd.id == 1) {
-      EXPECT_EQ(cd.subscribtions.size(), size_t(2));
-      EXPECT_TRUE(std::find(cd.subscribtions.begin(), cd.subscribtions.end(), "q1") !=
-                  cd.subscribtions.end());
-
-      EXPECT_TRUE(std::find(cd.subscribtions.begin(), cd.subscribtions.end(), "q2") !=
-                  cd.subscribtions.end());
-
-      EXPECT_TRUE(std::find(cd.subscribtions.begin(), cd.subscribtions.end(), "q3") ==
-                  cd.subscribtions.end());
-    }
-    if (cd.id == 2) {
-      EXPECT_EQ(cd.subscribtions.size(), size_t(1));
-      EXPECT_TRUE(std::find(cd.subscribtions.begin(), cd.subscribtions.end(), "q3") !=
-                  cd.subscribtions.end());
-    }
-    if (cd.id == 3) {
-      EXPECT_EQ(cd.subscribtions.size(), size_t(1));
-    }
-  }
 
   descr = n.getQueuesDescription();
   for (auto d : descr) {

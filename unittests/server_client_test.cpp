@@ -112,8 +112,8 @@ TEST_CASE("server.client.create_queue") {
   }
 
   while (true) {
-    auto cds = server->getClientDescription();
-    if (cds.size() == size_t(3)) {
+    auto us = server->users();
+    if (us.size() == size_t(3)) {
       break;
     } else {
       logger_info("server.client.create_queue erver->getClientDescription is empty ",
@@ -149,14 +149,14 @@ TEST_CASE("server.client.create_queue") {
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
   DataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
-                                                      const rawData &d, int id) {
+                                                      const rawData &d, Id id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(queueName, qname);
     sended++;
   };
 
   DataHandler server_handler = [&test_data, &sended, &qname](const std::string &queueName,
-                                                             const rawData &d, int id) {
+                                                             const rawData &d, Id id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(queueName, qname);
     sended++;

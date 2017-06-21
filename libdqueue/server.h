@@ -18,7 +18,7 @@ public:
   EXPORT void stopServer();
   EXPORT bool is_started();
   EXPORT std::vector<Node::QueueDescription> getDescription() const;
-  EXPORT std::vector<Node::ClientDescription> getClientDescription() const;
+  EXPORT std::vector<User> users()const;
 
   EXPORT void addHandler(DataHandler handler) override;
   EXPORT void createQueue(const QueueSettings &settings) override;

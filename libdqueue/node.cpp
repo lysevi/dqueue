@@ -14,15 +14,20 @@ struct QueueListener {
 } // namespace
 
 struct Node::Private {
-  Private(const Settings &settigns, DataHandler dh) : _settigns(settigns) {
+  Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub) : _settigns(settigns) {
     _handler = dh;
     nextQueueId = 0;
+	_clients = ub;
   }
 
-  void createQueue(const QueueSettings &qsettings, const int ownerId) {
+  void createQueue(const QueueSettings &qsettings, const Id ownerId) {
     ENSURE(!qsettings.name.empty());
     logger_info("node: create queue:", qsettings.name, ", owner: #", ownerId);
-    clientById(ownerId);
+
+	if (!_clients->exists(ownerId)) {
+		THROW_EXCEPTION("node: clientId=", ownerId, " does not exists");
+	}
+
     {
       std::lock_guard<std::shared_mutex> lg(_queues_locker);
 
@@ -57,16 +62,11 @@ struct Node::Private {
     return result;
   }
 
-  void addClient(const Client &c) {
-    logger_info("node: add client #", c.id);
-    std::lock_guard<std::shared_mutex> lg(_clients_locker);
-    _clients[c.id] = c;
-  }
 
-  void eraseClient(const int id) {
+  void eraseClient(const Id id) {
     logger_info("node: erase client #", id);
-    std::lock(_clients_locker, _subscriptions_locker, _queues_locker);
-    _clients.erase(id);
+    std::lock(_subscriptions_locker, _queues_locker);
+    _clients->erase(id);
 
     // erase _subscriptions
     for (auto &s : _subscriptions) {
@@ -92,34 +92,11 @@ struct Node::Private {
         }
       }
     }
-    _clients_locker.unlock();
     _subscriptions_locker.unlock();
     _queues_locker.unlock();
   }
 
-  std::vector<ClientDescription> getClientsDescription() const {
-    std::shared_lock<std::shared_mutex> sm(_clients_locker);
-    std::vector<ClientDescription> result(_clients.size());
-    size_t pos = 0;
-    for (auto kv : _clients) {
-      if (kv.first == ServerID) {
-        continue;
-      }
-
-      ClientDescription cd(kv.second.id);
-      {
-        std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
-        for (const auto &subscr : _subscriptions) {
-          if (subscr.second.find(kv.second.id) != subscr.second.end()) {
-            cd.subscribtions.push_back(queueByName(subscr.first).settings.name);
-          }
-        }
-      }
-      result[pos++] = cd;
-    }
-    return result;
-  }
-
+  
   Queue queueById(int id) const {
     std::shared_lock<std::shared_mutex> sl(_queues_locker);
     for (auto kv : _queues) {
@@ -139,24 +116,13 @@ struct Node::Private {
     return it->second;
   }
 
-  Client clientById(int id) {
-    std::shared_lock<std::shared_mutex> sm(_clients_locker);
-    auto it = _clients.find(id);
-    if (it == _clients.end()) {
-      THROW_EXCEPTION("server: clientById not found #", id);
-    }
-    return it->second;
-  }
-
   void changeSubscription(SubscribeActions action, const std::string &queueName,
-                          int clientId) {
+	  Id clientId) {
     logger_info("node: changeSubscription:", queueName, ",  #", clientId);
     queueByName(queueName);
 
     {
-      std::shared_lock<std::shared_mutex> sm(_clients_locker);
-      auto it = _clients.find(clientId);
-      if (it == _clients.end()) {
+      if (!_clients->exists(clientId)) {
         THROW_EXCEPTION("node: clientId=", clientId, " does not exists");
       }
     }
@@ -192,7 +158,7 @@ struct Node::Private {
 
   void publish(const std::string &qname, const rawData &rd) {
     queueByName(qname);
-    std::map<int, QueueListener> local_cpy;
+    std::map<Id, QueueListener> local_cpy;
 
     {
       std::shared_lock<std::shared_mutex> sl(_subscriptions_locker);
@@ -209,29 +175,28 @@ struct Node::Private {
 
   Settings _settigns;
 
+  UserBase_Ptr _clients;
+
   // TODO all dict is name2value. not id2value.
   mutable std::shared_mutex _queues_locker;
   std::map<std::string, Queue> _queues; // name to queue
   int nextQueueId;
 
-  mutable std::shared_mutex _clients_locker;
-  std::map<int, Client> _clients; // id to client
-
   mutable std::shared_mutex _subscriptions_locker;
-  std::map<std::string, std::map<int, QueueListener>>
+  std::map<std::string, std::map<Id, QueueListener>>
       _subscriptions; // queue 2 (userId listener)
 
   DataHandler _handler;
 };
 
-Node::Node(const Settings &settigns, DataHandler dh)
-    : _impl(std::make_unique<Node::Private>(settigns, dh)) {}
+Node::Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub)
+    : _impl(std::make_unique<Node::Private>(settigns, dh, ub)) {}
 
 Node::~Node() {
   _impl = nullptr;
 }
 
-void Node::createQueue(const QueueSettings &qsettings, const int ownerId) {
+void Node::createQueue(const QueueSettings &qsettings, const Id ownerId) {
   _impl->createQueue(qsettings, ownerId);
 }
 
@@ -239,20 +204,13 @@ std::vector<Node::QueueDescription> Node::getQueuesDescription() const {
   return _impl->getDescription();
 }
 
-void Node::addClient(const Client &c) {
-  _impl->addClient(c);
-}
-
-void Node::eraseClient(const int id) {
+void Node::eraseClient(const Id id) {
   _impl->eraseClient(id);
 }
 
-std::vector<Node::ClientDescription> Node::getClientsDescription() const {
-  return _impl->getClientsDescription();
-}
 
 void Node::changeSubscription(Node::SubscribeActions action, const std::string &queueName,
-                              int clientId) {
+	Id clientId) {
   return _impl->changeSubscription(action, queueName, clientId);
 }
 

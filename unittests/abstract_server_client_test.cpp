@@ -60,7 +60,7 @@ struct testable_client : public AbstractClient {
 };
 
 struct testable_server : public AbstractServer {
-  std::map<int, size_t> id2count;
+  std::map<Id, size_t> id2count;
   std::mutex _locker;
 
   bool all_id_gt(size_t v) {
@@ -114,7 +114,7 @@ struct testable_server : public AbstractServer {
   void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
 
-  std::set<int> connections;
+  std::set<Id> connections;
 
   ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &c) override {
     connections.insert(c.get_id());

@@ -2,6 +2,7 @@
 
 #include <libdqueue/exports.h>
 #include <libdqueue/q.h>
+#include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
 #include <functional>
 
@@ -9,7 +10,7 @@ namespace dqueue {
 
 using rawData = std::vector<uint8_t>;
 using DataHandler =
-    std::function<void(const std::string &queueName, const rawData &d, int id)>;
+    std::function<void(const std::string &queueName, const rawData &d, Id id)>;
 
 class IQueueClient {
 public:

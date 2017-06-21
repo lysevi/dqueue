@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libdqueue/async_io.h>
+#include <libdqueue/users.h>
 #include <libdqueue/exports.h>
 #include <mutex>
 
@@ -16,7 +17,7 @@ public:
 
   class ClientConnection : public std::enable_shared_from_this<ClientConnection> {
   public:
-    ClientConnection(int id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
+    ClientConnection(Id id_, socket_ptr sock_, std::shared_ptr<AbstractServer> s);
     ~ClientConnection();
     void start();
     void close();
@@ -25,10 +26,10 @@ public:
                         const boost::system::error_code &err);
     void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
     EXPORT void sendData(const NetworkMessage_ptr &d);
-    EXPORT int get_id() const { return id; }
+    EXPORT Id get_id() const { return id; }
 
   private:
-    int id;
+	  Id id;
     socket_ptr sock = nullptr;
     std::shared_ptr<AsyncIO> _async_connection = nullptr;
     std::shared_ptr<AbstractServer> _server = nullptr;
@@ -41,7 +42,7 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
-  EXPORT void sendTo(int id, NetworkMessage_ptr &d);
+  EXPORT void sendTo(Id id, NetworkMessage_ptr &d);
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
   virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,

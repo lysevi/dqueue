@@ -9,7 +9,7 @@ using namespace boost::asio::ip;
 
 using namespace dqueue;
 
-AbstractServer::ClientConnection::ClientConnection(int id_, socket_ptr sock_,
+AbstractServer::ClientConnection::ClientConnection(Id id_, socket_ptr sock_,
                                                    std::shared_ptr<AbstractServer> s)
     : id(id_), sock(sock_), _server(s) {}
 
@@ -31,7 +31,6 @@ void AbstractServer::ClientConnection::start() {
   };
 
   _async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
-  _async_connection->set_id(id);
   _async_connection->start(sock);
 }
 
@@ -111,7 +110,7 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
     {
       std::lock_guard<std::mutex> lg(self->_locker_connections);
       new_client =
-          std::make_shared<AbstractServer::ClientConnection>(self->_next_id, sock, self);
+          std::make_shared<AbstractServer::ClientConnection>((Id)self->_next_id, sock, self);
       self->_next_id++;
     }
 
@@ -142,7 +141,7 @@ void AbstractServer::stopServer() {
   }
 }
 
-void AbstractServer::sendTo(int id, NetworkMessage_ptr &d) {
+void AbstractServer::sendTo(Id id, NetworkMessage_ptr &d) {
   std::lock_guard<std::mutex> lg(this->_locker_connections);
   for (auto c : _connections) {
     if (c->get_id() == id) {

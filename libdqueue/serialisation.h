@@ -27,28 +27,31 @@ template <class T> struct get_size<std::vector<T>> {
 };
 
 template <typename Iterator, typename S> struct writer {
-  static void write_value(Iterator it, const S &s) {
+  static size_t write_value(Iterator it, const S &s) {
     static_assert(std::is_pod<S>::value, "S is not a POD value");
     std::memcpy(&(*it), &s, sizeof(s));
+    return sizeof(s);
   }
 };
 
 template <typename Iterator> struct writer<Iterator, std::string> {
-  static void write_value(Iterator it, const std::string &s) {
+  static size_t write_value(Iterator it, const std::string &s) {
     auto len = static_cast<uint32_t>(s.size());
     auto ptr = &(*it);
     std::memcpy(ptr, &len, sizeof(uint32_t));
     std::memcpy(ptr + sizeof(uint32_t), s.data(), s.size());
+    return sizeof(uint32_t) + s.size();
   }
 };
 
 template <typename Iterator, class T> struct writer<Iterator, std::vector<T>> {
-  static void write_value(Iterator it, const std::vector<T> &s) {
+  static size_t write_value(Iterator it, const std::vector<T> &s) {
     static_assert(std::is_pod<T>::value, "T is not a POD object");
     auto len = static_cast<uint32_t>(s.size());
     auto ptr = &(*it);
     std::memcpy(ptr, &len, sizeof(uint32_t));
     std::memcpy(ptr + sizeof(uint32_t), s.data(), s.size() * sizeof(T));
+    return sizeof(uint32_t) + s.size() * sizeof(T);
   }
 };
 
@@ -98,15 +101,13 @@ template <class... T> class Scheme {
 
   template <class Iterator, typename Head>
   static void write_args(Iterator it, const Head &head) {
-    auto szofcur = get_size<Head>::size(head);
-    writer<Iterator, Head>::write_value(it, head);
+    auto szofcur = writer<Iterator, Head>::write_value(it, head);
     it += szofcur;
   }
 
   template <class Iterator, typename Head, typename... Tail>
   static void write_args(Iterator it, const Head &head, const Tail &... t) {
-    auto szofcur = get_size<Head>::size(head);
-    writer<Iterator, Head>::write_value(it, head);
+    auto szofcur = writer<Iterator, Head>::write_value(it, head);
     it += szofcur;
     write_args(it, std::forward<const Tail>(t)...);
   }

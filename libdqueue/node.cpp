@@ -74,15 +74,15 @@ struct Node::Private {
         s.second.erase(id);
 
         // empty or server only
-        bool is_empty = s.second.empty();
-        if (!is_empty) {
+        bool must_be_removed = s.second.empty();
+        if (!must_be_removed) {
           auto subscr_it = s.second.find(ServerID);
           if (subscr_it != s.second.end()) {
-            is_empty = !subscr_it->second.isowner;
+            // if only server subscription, and server not a owner of a queue.
+            must_be_removed = !subscr_it->second.isowner;
           }
         }
-        if (is_empty) {
-
+        if (must_be_removed) {
           auto qname = s.first;
           logger_info("server: erase queue ", qname);
 

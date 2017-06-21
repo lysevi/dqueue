@@ -5,14 +5,12 @@
 
 using namespace dqueue;
 
-struct Client::Private final : virtual public AbstractClient {
+struct Client::Private final : virtual public AbstractClient, public IQueueClient {
 
   Private(boost::asio::io_service *service, const AbstractClient::Params &_params)
       : AbstractClient(service, _params) {}
 
   virtual ~Private() {}
-
-  void addHandler(Node::dataHandler handler) { _handler = handler; }
 
   void connect() {
     this->async_connect();
@@ -47,14 +45,16 @@ struct Client::Private final : virtual public AbstractClient {
   void onNetworkError(const NetworkMessage_ptr &d,
                       const boost::system::error_code &err) override {}
 
-  void createQueue(const QueueSettings &settings) {
+  void addHandler(DataHandler handler) override { _handler = handler; }
+
+  void createQueue(const QueueSettings &settings) override {
     logger_info("client: createQueue ", settings.name);
     queries::CreateQueue cq(settings.name);
     auto nd = cq.toNetworkMessage();
     this->_async_connection->send(nd);
   }
 
-  void subscribe(const std::string &qname) {
+  void subscribe(const std::string &qname) override {
     logger_info("client: subscribe ", qname);
 
     queries::ChangeSubscribe cs(qname);
@@ -66,7 +66,7 @@ struct Client::Private final : virtual public AbstractClient {
     this->_async_connection->send(nd);
   }
 
-  void unsubscribe(const std::string &qname) {
+  void unsubscribe(const std::string &qname) override {
     logger_info("client: unsubscribe ", qname);
     queries::ChangeSubscribe cs(qname);
 
@@ -77,14 +77,14 @@ struct Client::Private final : virtual public AbstractClient {
     this->_async_connection->send(nd);
   }
 
-  void publish(const std::string &qname, const std::vector<uint8_t> &data) {
+  void publish(const std::string &qname, const std::vector<uint8_t> &data) override {
     logger_info("client: publish ", qname);
     queries::Publish pb(qname, data);
     auto nd = pb.toNetworkMessage();
     this->_async_connection->send(nd);
   }
 
-  Node::dataHandler _handler;
+  DataHandler _handler;
 };
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -92,10 +92,6 @@ Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_
 
 Client::~Client() {
   _impl = nullptr;
-}
-
-void Client::addHandler(Node::dataHandler handler) {
-  return _impl->addHandler(handler);
 }
 
 void Client::asyncConnect() {
@@ -112,6 +108,10 @@ void Client::connect() {
 
 void Client::disconnect() {
   return _impl->disconnect();
+}
+
+void Client::addHandler(DataHandler handler) {
+  return _impl->addHandler(handler);
 }
 
 void Client::createQueue(const QueueSettings &settings) {

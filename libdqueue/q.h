@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string>
 namespace dqueue {
+
 struct QueueSettings {
   std::string name;
   QueueSettings() {}

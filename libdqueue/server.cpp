@@ -7,13 +7,11 @@
 
 using namespace dqueue;
 
-struct Server::Private final : public AbstractServer {
+struct Server::Private final : public AbstractServer, public IQueueClient {
   Private(boost::asio::io_service *service, AbstractServer::params &p)
       : AbstractServer(service, p) {
-    Node::dataHandler dhandler = [this](const std::string &queueName,
-                                        const Node::rawData &rd, int id) {
-      this->onSendToClient(queueName, rd, id);
-    };
+    DataHandler dhandler = [this](const std::string &queueName, const rawData &rd,
+                                  int id) { this->onSendToClient(queueName, rd, id); };
     _node = std::make_unique<Node>(Node::Settings(), dhandler);
     _node->addClient({Node::ServerID});
   }
@@ -32,7 +30,7 @@ struct Server::Private final : public AbstractServer {
     }
   }
 
-  void onSendToClient(const std::string &queueName, const Node::rawData &rd, int id) {
+  void onSendToClient(const std::string &queueName, const rawData &rd, int id) {
     if (id == Node::ServerID) {
       if (_dh != nullptr) {
         _dh(queueName, rd, id);
@@ -100,18 +98,26 @@ struct Server::Private final : public AbstractServer {
     return _node->getClientsDescription();
   }
 
-  void createQueue(const QueueSettings &settings) {
+  void createQueue(const QueueSettings &settings) override {
     _node->createQueue(settings, Node::ServerID);
   }
 
-  void addDataHandler(Node::dataHandler dh) { _dh = dh; }
+  void addHandler(DataHandler dh) { _dh = dh; }
 
-  void changeSubscription(Node::SubscribeActions action, std::string queueName) {
-    _node->changeSubscription(action, queueName, Node::ServerID);
+  void subscribe(const std::string &qname) override {
+    _node->changeSubscription(Node::SubscribeActions::Subscribe, qname, Node::ServerID);
+  }
+
+  void unsubscribe(const std::string &qname) override {
+    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, qname, Node::ServerID);
+  }
+
+  virtual void publish(const std::string &qname, const rawData &data) override {
+    _node->publish(qname, data);
   }
 
   std::unique_ptr<Node> _node;
-  Node::dataHandler _dh;
+  DataHandler _dh;
 };
 
 Server::Server(boost::asio::io_service *service, AbstractServer::params &p)
@@ -141,14 +147,22 @@ std::vector<Node::ClientDescription> Server::getClientDescription() const {
   return _impl->getClientDescription();
 }
 
+void Server::addHandler(DataHandler dh) {
+  return _impl->addHandler(dh);
+}
+
 void Server::createQueue(const QueueSettings &settings) {
   return _impl->createQueue(settings);
 }
 
-void Server::addDataHandler(Node::dataHandler dh) {
-  return _impl->addDataHandler(dh);
+void Server::subscribe(const std::string &qname) {
+  return _impl->subscribe(qname);
 }
 
-void Server::changeSubscription(Node::SubscribeActions action, std::string queueName) {
-  return _impl->changeSubscription(action, queueName);
+void Server::unsubscribe(const std::string &qname) {
+  return _impl->unsubscribe(qname);
+}
+
+void Server::publish(const std::string &qname, const rawData &data) {
+  return _impl->publish(qname, data);
 }

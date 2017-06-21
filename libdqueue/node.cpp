@@ -14,7 +14,7 @@ struct QueueListener {
 } // namespace
 
 struct Node::Private {
-  Private(const Settings &settigns, dataHandler dh) : _settigns(settigns) {
+  Private(const Settings &settigns, DataHandler dh) : _settigns(settigns) {
     _handler = dh;
     nextQueueId = 0;
   }
@@ -76,9 +76,9 @@ struct Node::Private {
         // empty or server only
         bool is_empty = s.second.empty();
         if (!is_empty) {
-          auto it = s.second.find(ServerID);
-          if (it != s.second.end()) {
-            is_empty = !it->second.isowner;
+          auto subscr_it = s.second.find(ServerID);
+          if (subscr_it != s.second.end()) {
+            is_empty = !subscr_it->second.isowner;
           }
         }
         if (is_empty) {
@@ -188,7 +188,7 @@ struct Node::Private {
     }
   }
 
-  void publish(const std::string &qname, const Node::rawData &rd) {
+  void publish(const std::string &qname, const rawData &rd) {
     queueByName(qname);
     std::map<int, QueueListener> local_cpy;
 
@@ -219,10 +219,10 @@ struct Node::Private {
   std::map<std::string, std::map<int, QueueListener>>
       _subscriptions; // queue 2 (userId listener)
 
-  Node::dataHandler _handler;
+  DataHandler _handler;
 };
 
-Node::Node(const Settings &settigns, dataHandler dh)
+Node::Node(const Settings &settigns, DataHandler dh)
     : _impl(std::make_unique<Node::Private>(settigns, dh)) {}
 
 Node::~Node() {
@@ -254,6 +254,6 @@ void Node::changeSubscription(Node::SubscribeActions action, const std::string &
   return _impl->changeSubscription(action, queueName, clientId);
 }
 
-void Node::publish(const std::string &qname, const Node::rawData &rd) {
+void Node::publish(const std::string &qname, const rawData &rd) {
   return _impl->publish(qname, rd);
 }

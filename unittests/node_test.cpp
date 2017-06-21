@@ -9,8 +9,8 @@ TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
   std::set<int> sends;
 
-  Node::dataHandler dhandler = [&sends](const std::string &queueName,
-                                        const Node::rawData &, int id) {
+  DataHandler dhandler = [&sends](const std::string &queueName,
+                                        const rawData &, int id) {
     EXPECT_TRUE(!queueName.empty());
     sends.insert(id);
   };
@@ -76,13 +76,13 @@ TEST_CASE("node.queue_subscription") {
     }
   }
 
-  n.publish("q1", Node::rawData(1));
+  n.publish("q1", rawData(1));
   EXPECT_EQ(sends.size(), size_t(1));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
 
   sends.clear();
 
-  n.publish("q3", Node::rawData(3));
+  n.publish("q3", rawData(3));
   EXPECT_EQ(sends.size(), size_t(2));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) == sends.end());
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 2) != sends.end());

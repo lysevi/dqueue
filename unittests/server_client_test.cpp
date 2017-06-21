@@ -148,24 +148,22 @@ TEST_CASE("server.client.create_queue") {
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
-  Node::dataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
-                                                            const Node::rawData &d,
-                                                            int id) {
+  DataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
+                                                      const rawData &d, int id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(queueName, qname);
     sended++;
   };
 
-  Node::dataHandler server_handler = [&test_data, &sended,
-                                      &qname](const std::string &queueName,
-                                              const Node::rawData &d, int id) {
+  DataHandler server_handler = [&test_data, &sended, &qname](const std::string &queueName,
+                                                             const rawData &d, int id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(queueName, qname);
     sended++;
   };
 
-  server->addDataHandler(server_handler);
-  server->changeSubscription(Node::SubscribeActions::Subscribe, qname);
+  server->addHandler(server_handler);
+  server->subscribe(qname);
 
   client->addHandler(handler);
   client2->addHandler(handler);

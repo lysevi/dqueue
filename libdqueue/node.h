@@ -1,8 +1,8 @@
 #pragma once
 
 #include <libdqueue/exports.h>
+#include <libdqueue/iqueue_client.h>
 #include <libdqueue/q.h>
-#include <functional>
 
 namespace dqueue {
 class Node {
@@ -40,11 +40,8 @@ public:
     ClientDescription() : id(std::numeric_limits<int>::max()) {}
     ClientDescription(int id_) : id(id_) {}
   };
-  using rawData = std::vector<uint8_t>;
-  using dataHandler =
-      std::function<void(const std::string &queueName, const rawData &d, int id)>;
 
-  EXPORT Node(const Settings &settigns, dataHandler dh);
+  EXPORT Node(const Settings &settigns, DataHandler dh);
   EXPORT ~Node();
   EXPORT void createQueue(const QueueSettings &qsettings, const int ownerId);
   EXPORT std::vector<QueueDescription> getQueuesDescription() const;

@@ -3,9 +3,9 @@
 namespace dqueue {
 namespace serialisation {
 
-template <> size_t get_size_of<std::string>(const std::string &s) {
-  return sizeof(uint32_t) + s.length();
-}
+//template <> size_t get_size_of<std::string>(const std::string &s) {
+//  return sizeof(uint32_t) + s.length();
+//}
 
 //template <typename Iterator>
 //void write_value<Iterator, std::string>(Iterator it, 

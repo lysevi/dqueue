@@ -166,6 +166,11 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
+
+  for (auto &c : clients) {
+	  EXPECT_TRUE(c->is_connected());
+  }
+
   for (auto &c : clients) {
     while (!abstract_server->all_id_gt(10) && c->message_one < 10) {
       logger_info("testForReconnection. client.message_one: ", c->message_one);

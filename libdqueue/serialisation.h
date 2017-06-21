@@ -52,29 +52,29 @@ template <typename Iterator> struct reader<Iterator, std::string> {
 };
 
 template <class... T> class Scheme {
-  template <typename Head> static void calculate_size_rec(size_t &result, Head &&head) {
+  template <typename Head> static void calculate_size_rec(size_t &result, const Head &&head) {
     result += get_size_of(head);
   }
 
   template <typename Head, typename... Tail>
-  static void calculate_size_rec(size_t &result, Head &&head, Tail &&... t) {
-    result += get_size_of(std::forward<Head>(head));
-    calculate_size_rec(result, std::forward<Tail>(t)...);
+  static void calculate_size_rec(size_t &result, const Head &&head, const Tail &&... t) {
+    result += get_size_of(std::forward<const Head>(head));
+    calculate_size_rec(result, std::forward<const Tail>(t)...);
   }
 
   template <class Iterator, typename Head>
-  static void write_args(Iterator it, Head &&head) {
+  static void write_args(Iterator it, const Head &head) {
     static auto szofcur = get_size_of(head);
     writer<Iterator, Head>::write_value(it, head);
     it += szofcur;
   }
 
   template <class Iterator, typename Head, typename... Tail>
-  static void write_args(Iterator it, Head &&head, Tail &&... t) {
+  static void write_args(Iterator it, const Head &head, const Tail &... t) {
     auto szofcur = get_size_of(head);
     writer<Iterator, Head>::write_value(it, head);
     it += szofcur;
-    write_args(it, std::forward<Tail>(t)...);
+    write_args(it, std::forward<const Tail>(t)...);
   }
 
   template <class Iterator, typename Head>
@@ -93,14 +93,14 @@ template <class... T> class Scheme {
   }
 
 public:
-  static size_t capacity(T &&... args) {
+  static size_t capacity(const T &... args) {
     size_t result = 0;
-    calculate_size_rec(result, std::forward<T>(args)...);
+    calculate_size_rec(result, std::forward<const T>(args)...);
     return result;
   }
 
-  template <class Iterator> static void write(Iterator it, T &&... t) {
-    write_args(it, std::forward<T>(t)...);
+  template <class Iterator> static void write(Iterator it, const T &... t) {
+    write_args(it, std::forward<const T>(t)...);
   }
 
   template <class Iterator> static void read(Iterator it, T &... t) {

@@ -2,6 +2,7 @@
 
 #include <libdqueue/kinds.h>
 #include <libdqueue/network_message.h>
+#include <libdqueue/serialisation.h>
 #include <libdqueue/utils/utils.h>
 #include <cstdint>
 #include <cstring>
@@ -11,26 +12,20 @@ namespace queries {
 
 struct ChangeSubscribe {
   std::string qname;
-  
+
+  using Scheme = serialisation::Scheme<std::string>;
+
   ChangeSubscribe(const std::string &queue) { qname = queue; }
 
-  ChangeSubscribe(const NetworkMessage_ptr &nd) {
-    uint32_t len = 0;
-    memcpy(&len, nd->value(), sizeof(uint32_t));
-    ENSURE(len > uint32_t());
-
-    qname.resize(len);
-    memcpy(&qname[0], nd->value() + sizeof(uint32_t), len);
-  }
+  ChangeSubscribe(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), qname); }
 
   NetworkMessage_ptr toNetworkMessage() const {
-    uint32_t len = static_cast<uint32_t>(qname.size());
-    uint32_t neededSize = sizeof(uint32_t) + len;
+    auto neededSize = Scheme::capacity(qname);
+
     auto nd = std::make_shared<NetworkMessage>(
         neededSize, (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);
 
-    memcpy(nd->value(), &(len), sizeof(uint32_t));
-    memcpy(nd->value() + sizeof(uint32_t), this->qname.data(), this->qname.size());
+    Scheme::write(nd->value(), qname);
     return nd;
   }
 };

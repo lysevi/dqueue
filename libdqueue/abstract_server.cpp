@@ -104,6 +104,8 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
       THROW_EXCEPTION("dariadb::server: error on accept - ", err.message());
     }
   } else {
+    ENSURE(!self->_is_stoped);
+
     logger_info("server: accept connection.");
     std::shared_ptr<ClientConnection> new_client = nullptr;
     {
@@ -124,8 +126,10 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
 }
 
 void AbstractServer::stopServer() {
+  ENSURE(!_is_stoped);
   if (!_is_stoped) {
     logger("abstract_server::stopServer()");
+    _acc->close();
     _acc = nullptr;
     if (!_connections.empty()) {
       std::vector<std::shared_ptr<ClientConnection>> local_copy(_connections.begin(),

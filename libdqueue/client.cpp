@@ -12,7 +12,7 @@ struct Client::Private final : virtual public AbstractClient {
 
   virtual ~Private() {}
 
-  void addHandler(dataHandler handler) { _handler = handler; }
+  void addHandler(Node::dataHandler handler) { _handler = handler; }
 
   void connect() {
     this->async_connect();
@@ -33,8 +33,7 @@ struct Client::Private final : virtual public AbstractClient {
       logger_info("client: recv publish");
       auto cs = queries::Publish(d);
       if (this->_handler != nullptr) {
-        Queue q(QueueSettings(cs.qname));
-        _handler(q, cs.data);
+        _handler(cs.qname, cs.data, 0);
       } else {
         logger_info("client: _handler was not be set");
       }
@@ -85,7 +84,7 @@ struct Client::Private final : virtual public AbstractClient {
     this->_async_connection->send(nd);
   }
 
-  dataHandler _handler;
+  Node::dataHandler _handler;
 };
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -95,7 +94,7 @@ Client::~Client() {
   _impl = nullptr;
 }
 
-void Client::addHandler(dataHandler handler) {
+void Client::addHandler(Node::dataHandler handler) {
   return _impl->addHandler(handler);
 }
 

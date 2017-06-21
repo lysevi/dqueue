@@ -9,7 +9,9 @@ TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
   std::set<int> sends;
 
-  Node::dataHandler dhandler = [&sends](const Node::rawData &, int id) {
+  Node::dataHandler dhandler = [&sends](const std::string &queueName,
+                                        const Node::rawData &, int id) {
+    EXPECT_TRUE(!queueName.empty());
     sends.insert(id);
   };
 
@@ -24,7 +26,6 @@ TEST_CASE("node.queue_subscription") {
   auto cldescr = n.getClientsDescription();
   EXPECT_EQ(cldescr.size(), size_t(3));
 
-  
   n.createQueue(QueueSettings("q1"), 1);
   n.createQueue(QueueSettings("q2"), 1);
   n.createQueue(QueueSettings("q3"), 2);

@@ -10,13 +10,15 @@ using namespace dqueue;
 struct Server::Private final : public AbstractServer {
   Private(boost::asio::io_service *service, AbstractServer::params &p)
       : AbstractServer(service, p) {
-    Node::dataHandler dhandler = [this](const Node::rawData &rd, int id) {
-      this->onSendToClient(rd, id);
+    Node::dataHandler dhandler = [this](const std::string &queueName,
+                                        const Node::rawData &rd, int id) {
+      this->onSendToClient(queueName, rd, id);
     };
     _node = std::make_unique<Node>(Node::Settings(), dhandler);
+    _node->addClient({Node::ServerID});
   }
 
-  virtual ~Private() {}
+  virtual ~Private() { _node->eraseClient(Node::ServerID); }
 
   void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) {}
 
@@ -30,11 +32,17 @@ struct Server::Private final : public AbstractServer {
     }
   }
 
-  void onSendToClient(const Node::rawData &rd, int id) {
-    // TODO make one allocation in onNewMessage
-    queries::Publish pub("client", rd);
-    auto nd = pub.toNetworkMessage();
-    this->sendTo(id, nd);
+  void onSendToClient(const std::string &queueName, const Node::rawData &rd, int id) {
+    if (id == Node::ServerID) {
+      if (_dh != nullptr) {
+        _dh(queueName, rd, id);
+      }
+    } else {
+      // TODO make one allocation in onNewMessage
+      queries::Publish pub(queueName, rd);
+      auto nd = pub.toNetworkMessage();
+      this->sendTo(id, nd);
+    }
   }
 
   void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d, bool &cancel) {
@@ -62,7 +70,7 @@ struct Server::Private final : public AbstractServer {
       break;
     }
     case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
-      logger_info("server: #", i.get_id(), " publish");
+      logger("server: #", i.get_id(), " publish");
       auto cs = queries::Publish(d);
       _node->publish(cs.qname, cs.data);
       break;
@@ -91,7 +99,19 @@ struct Server::Private final : public AbstractServer {
   std::vector<Node::ClientDescription> getClientDescription() const {
     return _node->getClientsDescription();
   }
+
+  void createQueue(const QueueSettings &settings) {
+    _node->createQueue(settings, Node::ServerID);
+  }
+
+  void addDataHandler(Node::dataHandler dh) { _dh = dh; }
+
+  void changeSubscription(Node::SubscribeActions action, std::string queueName) {
+    _node->changeSubscription(action, queueName, Node::ServerID);
+  }
+
   std::unique_ptr<Node> _node;
+  Node::dataHandler _dh;
 };
 
 Server::Server(boost::asio::io_service *service, AbstractServer::params &p)
@@ -119,4 +139,16 @@ std::vector<Node::QueueDescription> Server::getDescription() const {
 
 std::vector<Node::ClientDescription> Server::getClientDescription() const {
   return _impl->getClientDescription();
+}
+
+void Server::createQueue(const QueueSettings &settings) {
+  return _impl->createQueue(settings);
+}
+
+void Server::addDataHandler(Node::dataHandler dh) {
+  return _impl->addDataHandler(dh);
+}
+
+void Server::changeSubscription(Node::SubscribeActions action, std::string queueName) {
+  return _impl->changeSubscription(action, queueName);
 }

@@ -21,7 +21,7 @@ struct Node::Private {
 
   void createQueue(const QueueSettings &qsettings, const int ownerId) {
     ENSURE(!qsettings.name.empty());
-
+    logger_info("node: create queue:", qsettings.name, ", owner: #", ownerId);
     clientById(ownerId);
     {
       std::lock_guard<std::shared_mutex> lg(_queues_locker);
@@ -58,11 +58,13 @@ struct Node::Private {
   }
 
   void addClient(const Client &c) {
+    logger_info("node: add client #", c.id);
     std::lock_guard<std::shared_mutex> lg(_clients_locker);
     _clients[c.id] = c;
   }
 
   void eraseClient(const int id) {
+    logger_info("node: erase client #", id);
     std::lock(_clients_locker, _subscriptions_locker, _queues_locker);
     _clients.erase(id);
 
@@ -71,7 +73,16 @@ struct Node::Private {
       if (it != s.second.end()) {
         s.second.erase(id);
 
-        if (s.second.empty()) {
+        // empty or server only
+        bool is_empty = s.second.empty();
+        if (!is_empty) {
+          auto it = s.second.find(ServerID);
+          if (it != s.second.end()) {
+            is_empty = !it->second.isowner;
+          }
+        }
+        if (is_empty) {
+
           auto qname = s.first;
           logger_info("server: erase queue ", qname);
 
@@ -89,6 +100,10 @@ struct Node::Private {
     std::vector<ClientDescription> result(_clients.size());
     size_t pos = 0;
     for (auto kv : _clients) {
+      if (kv.first == ServerID) {
+        continue;
+      }
+
       ClientDescription cd(kv.second.id);
       {
         std::shared_lock<std::shared_mutex> subscr_sm(_subscriptions_locker);
@@ -131,7 +146,9 @@ struct Node::Private {
     return it->second;
   }
 
-  void changeSubscription(SubscribeActions action, std::string queueName, int clientId) {
+  void changeSubscription(SubscribeActions action, const std::string &queueName,
+                          int clientId) {
+    logger_info("node: changeSubscription:", queueName, ",  #", clientId);
     queueByName(queueName);
 
     {
@@ -166,8 +183,8 @@ struct Node::Private {
       _subscriptions[queueName].erase(clientId);
       break;
     }
-    /*default:
-      THROW_EXCEPTION("node: unknow action:", (int)action);*/
+      /*default:
+        THROW_EXCEPTION("node: unknow action:", (int)action);*/
     }
   }
 
@@ -184,7 +201,7 @@ struct Node::Private {
       /* if (clientId.second.isowner && !clientId.second.issubscribed) {
          continue;
        }*/
-      _handler(rd, clientId.first);
+      _handler(qname, rd, clientId.first);
     }
   }
 
@@ -232,7 +249,7 @@ std::vector<Node::ClientDescription> Node::getClientsDescription() const {
   return _impl->getClientsDescription();
 }
 
-void Node::changeSubscription(Node::SubscribeActions action, std::string queueName,
+void Node::changeSubscription(Node::SubscribeActions action, const std::string &queueName,
                               int clientId) {
   return _impl->changeSubscription(action, queueName, clientId);
 }

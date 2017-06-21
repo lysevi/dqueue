@@ -19,18 +19,23 @@ using namespace dqueue::utils;
 namespace server_client_test {
 
 bool server_stop = false;
-static std::shared_ptr<Server> server = nullptr;
-static boost::asio::io_service service;
+std::shared_ptr<Server> server = nullptr;
+boost::asio::io_service *service;
 void server_thread() {
   AbstractServer::params p;
   p.port = 4040;
-  server = std::make_shared<Server>(&service, p);
+  service = new boost::asio::io_service();
+  server = std::make_shared<Server>(service, p);
 
   server->serverStart();
   while (!server_stop) {
-    service.poll_one();
+    service->poll_one();
   }
+
   server->stopServer();
+  service->stop();
+  EXPECT_TRUE(service->stopped());
+  delete service;
   server = nullptr;
 }
 
@@ -38,16 +43,18 @@ void testForReconnection(const size_t clients_count) {
   AbstractClient::Params p;
   p.host = "localhost";
   p.port = 4040;
-  std::vector<std::shared_ptr<Client>> clients(clients_count);
-  for (size_t i = 0; i < clients_count; i++) {
-    clients[i] = std::make_shared<Client>(&service, p);
-    clients[i]->asyncConnect();
-  }
+
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
     logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ",
                 server == nullptr);
+  }
+
+  std::vector<std::shared_ptr<Client>> clients(clients_count);
+  for (size_t i = 0; i < clients_count; i++) {
+    clients[i] = std::make_shared<Client>(service, p);
+    clients[i]->asyncConnect();
   }
 
   for (auto &c : clients) {
@@ -91,22 +98,22 @@ TEST_CASE("server.client.create_queue") {
   server_stop = false;
   std::thread t(server_thread);
 
-  auto client = std::make_shared<Client>(&service, p);
-  auto client2 = std::make_shared<Client>(&service, p);
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.create_queue !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  auto client = std::make_shared<Client>(service, p);
+  auto client2 = std::make_shared<Client>(service, p);
   client->asyncConnect();
   client2->asyncConnect();
   while (!client->is_connected() || !client2->is_connected()) {
     logger_info("server.client.create_queue client not connected");
   }
 
-  while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.create_queue !server->is_started serverIsNull? ",
-                server == nullptr);
-  }
-
   while (true) {
     auto cds = server->getClientDescription();
-    if (cds.size() == size_t(2)) {
+    if (cds.size() == size_t(3)) {
       break;
     } else {
       logger_info("server.client.create_queue erver->getClientDescription is empty ",
@@ -141,17 +148,30 @@ TEST_CASE("server.client.create_queue") {
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
-  Client::dataHandler handler = [&test_data, &sended](const Queue &q,
-                                                      const std::vector<uint8_t> &data) {
-    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), data.begin(), data.end()));
+  Node::dataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
+                                                            const Node::rawData &d,
+                                                            int id) {
+    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
+    EXPECT_EQ(queueName, qname);
     sended++;
   };
+
+  Node::dataHandler server_handler = [&test_data, &sended,
+                                      &qname](const std::string &queueName,
+                                              const Node::rawData &d, int id) {
+    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
+    EXPECT_EQ(queueName, qname);
+    sended++;
+  };
+
+  server->addDataHandler(server_handler);
+  server->changeSubscription(Node::SubscribeActions::Subscribe, qname);
 
   client->addHandler(handler);
   client2->addHandler(handler);
 
   client->publish(qname, test_data);
-  while (sended != int(2)) {
+  while (sended != int(3)) {
     logger_info("server.client.create_queue !sended");
   }
 
@@ -182,18 +202,18 @@ TEST_CASE("server.client.empty_queue-erase") {
   server_stop = false;
   std::thread t(server_thread);
 
-  auto client = std::make_shared<Client>(&service, p);
-  auto client2 = std::make_shared<Client>(&service, p);
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  auto client = std::make_shared<Client>(service, p);
+  auto client2 = std::make_shared<Client>(service, p);
 
   client->connect();
   client2->connect();
   EXPECT_TRUE(client->is_connected());
   EXPECT_TRUE(client2->is_connected());
-
-  while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
-                server == nullptr);
-  }
 
   auto qname = "server.client.empty_queue-erase";
   QueueSettings qsettings1(qname);
@@ -213,7 +233,7 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   while (true) {
     auto ds = server->getDescription();
-    if (!ds.empty() && !ds.front().subscribers.empty()) {
+    if (!ds.empty() && ds.front().subscribers.size() == size_t(2)) {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
@@ -234,6 +254,67 @@ TEST_CASE("server.client.empty_queue-erase") {
     }
     logger_info("server.client.empty_queue-erase server->getDescription is not empty");
   }
+  client = nullptr;
+  client2 = nullptr;
+  server_stop = true;
+  while (server != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  t.join();
+}
+
+TEST_CASE("server.client.server-side-queue") {
+  using namespace server_client_test;
+  AbstractClient::Params p;
+  p.host = "localhost";
+  p.port = 4040;
+
+  server_stop = false;
+  std::thread t(server_thread);
+
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  auto client = std::make_shared<Client>(service, p);
+
+  client->connect();
+
+  EXPECT_TRUE(client->is_connected());
+
+  auto qname = "server.client.server-side-queue";
+  QueueSettings qsettings1(qname);
+  server->createQueue(qsettings1);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty()) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+  }
+
+  client->subscribe(qname);
+
+  while (true) {
+    auto ds = server->getDescription();
+    if (!ds.empty() && ds.front().subscribers.size() == size_t(2)) {
+      EXPECT_EQ(ds.front().settings.name, qname);
+      break;
+    }
+    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+  }
+
+  client->disconnect();
+
+  while (client->is_connected()) {
+    logger_info("server.client.empty_queue-erase client is still connected");
+  }
+
+  auto ds = server->getDescription();
+  EXPECT_EQ(ds.size(), size_t(1));
 
   server_stop = true;
   while (server != nullptr) {

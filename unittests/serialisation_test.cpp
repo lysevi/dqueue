@@ -28,14 +28,7 @@ TEST_CASE("serialisation.scheme") {
 	std::vector<int8_t> buffer(1024);
 
 	auto it = buffer.begin();
-	serialisation::Scheme<int>::write(it, 1);
-	auto sz = std::distance(buffer.begin(), it);
-	EXPECT_EQ(sz, sizeof(int));
-
-	it = buffer.begin();
 	serialisation::Scheme<int, int>::write(it, 1, 2);
-	sz = std::distance(buffer.begin(), it);
-	EXPECT_EQ(sz, sizeof(int) * 2);
 
 	it = buffer.begin();
 	int unpacked1, unpacked2;
@@ -47,8 +40,6 @@ TEST_CASE("serialisation.scheme") {
 	it = buffer.begin();
 	std::string str = "hello world";
 	serialisation::Scheme<int, std::string>::write(it, 11, std::move(str));
-	sz = std::distance(buffer.begin(), it);
-	EXPECT_EQ(size_t(sz), size_t(sizeof(int) + sizeof(uint32_t) + str.size()));
 
 	it = buffer.begin();
 	std::string unpackedS;

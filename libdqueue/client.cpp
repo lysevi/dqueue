@@ -50,9 +50,8 @@ struct Client::Private final : virtual public AbstractClient {
 
   void createQueue(const QueueSettings &settings) {
     logger_info("client: createQueue ", settings.name);
-    auto nd = settings.toNetworkMessage();
-    nd->cast_to_header()->kind =
-        static_cast<NetworkMessage::message_kind>(MessageKinds::CREATE_QUEUE);
+    queries::CreateQueue cq(settings.name);
+    auto nd = cq.toNetworkMessage();
     this->_async_connection->send(nd);
   }
 

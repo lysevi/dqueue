@@ -43,7 +43,8 @@ struct Server::Private final : public AbstractServer {
     switch (hdr->kind) {
     case (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE: {
       logger_info("server: #", i.get_id(), " create queue");
-      auto qs = QueueSettings::fromNetworkMessage(d);
+      queries::CreateQueue cq(d);
+      QueueSettings qs(cq.name);
       _node->createQueue(qs, i.get_id());
       break;
     }

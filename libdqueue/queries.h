@@ -10,6 +10,26 @@
 namespace dqueue {
 namespace queries {
 
+struct CreateQueue {
+  std::string name;
+
+  using Scheme = serialisation::Scheme<std::string>;
+
+  CreateQueue(const std::string &queue) { name = queue; }
+
+  CreateQueue(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), name); }
+
+  NetworkMessage_ptr toNetworkMessage() const {
+    auto neededSize = Scheme::capacity(name);
+
+    auto nd = std::make_shared<NetworkMessage>(
+        neededSize, (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE);
+
+    Scheme::write(nd->value(), name);
+    return nd;
+  }
+};
+
 struct ChangeSubscribe {
   std::string qname;
 
@@ -41,9 +61,9 @@ struct Publish {
     data = data_;
   }
 
-  Publish(const NetworkMessage_ptr &nd) { 
-	  auto it = nd->value();
-	  Scheme::read(it, qname, data); 
+  Publish(const NetworkMessage_ptr &nd) {
+    auto it = nd->value();
+    Scheme::read(it, qname, data);
   }
 
   NetworkMessage_ptr toNetworkMessage() const {

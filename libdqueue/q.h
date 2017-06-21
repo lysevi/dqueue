@@ -10,9 +10,6 @@ struct QueueSettings {
   std::string name;
   QueueSettings() {}
   QueueSettings(const std::string &name_) { name = name_; }
-
-  EXPORT NetworkMessage_ptr toNetworkMessage() const;
-  EXPORT static QueueSettings fromNetworkMessage(const NetworkMessage_ptr &nd);
 };
 
 struct Queue {

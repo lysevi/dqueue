@@ -19,6 +19,7 @@ public:
   EXPORT void connect();
   EXPORT void disconnect();
   EXPORT bool is_connected();
+  EXPORT Id getId()const;
   EXPORT size_t messagesInPool()const; // count dont sended messages.
 
   EXPORT void addHandler(DataHandler handler) override;

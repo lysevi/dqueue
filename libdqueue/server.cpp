@@ -81,7 +81,10 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
       logger_info("server: #", i.get_id(), " set login");
       queries::Login lg(d);
       _users->setLogin(i.get_id(), lg.login);
-      sendOk(i, LoginConfirmedID);
+
+      queries::LoginConfirm lc(i.get_id());
+	  auto nd = lc.toNetworkMessage();
+      sendTo(i, nd);
       break;
     }
     default:

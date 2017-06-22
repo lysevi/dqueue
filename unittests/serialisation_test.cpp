@@ -30,6 +30,16 @@ TEST_CASE("serialisation.login") {
   EXPECT_EQ(repacked.login, lg.login);
 }
 
+TEST_CASE("serialisation.login_confirm") {
+  LoginConfirm lg{uint64_t(1)};
+  auto nd = lg.toNetworkMessage();
+  EXPECT_EQ(nd->cast_to_header()->kind,
+            (NetworkMessage::message_kind)MessageKinds::LOGIN_CONFIRM);
+
+  auto repacked = LoginConfirm(nd);
+  EXPECT_EQ(repacked.id, lg.id);
+}
+
 TEST_CASE("serialisation.size_of_args") {
   EXPECT_EQ(serialisation::Scheme<int>::capacity(int(1)), sizeof(int));
   auto sz = serialisation::Scheme<int, int>::capacity(int(1), int(1));

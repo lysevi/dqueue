@@ -7,11 +7,10 @@ namespace dqueue {
 enum class MessageKinds : NetworkMessage::message_kind {
   OK,
   LOGIN,
+  LOGIN_CONFIRM,
   CREATE_QUEUE,
   SUBSCRIBE,
   UNSUBSCRIBE,
   PUBLISH,
 };
-
-const uint64_t LoginConfirmedID = std::numeric_limits<uint64_t>::max();
 } // namespace dqueue

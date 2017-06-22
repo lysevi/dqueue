@@ -50,6 +50,26 @@ struct Login {
   }
 };
 
+struct LoginConfirm {
+  uint64_t id;
+
+  using Scheme = serialisation::Scheme<uint64_t>;
+
+  LoginConfirm(uint64_t id_) { id = id_; }
+
+  LoginConfirm(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), id); }
+
+  NetworkMessage_ptr toNetworkMessage() const {
+    auto neededSize = Scheme::capacity(id);
+
+    auto nd = std::make_shared<NetworkMessage>(
+        neededSize, (NetworkMessage::message_kind)MessageKinds::LOGIN_CONFIRM);
+
+    Scheme::write(nd->value(), id);
+    return nd;
+  }
+};
+
 struct CreateQueue {
   std::string name;
 

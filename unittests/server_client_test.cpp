@@ -225,6 +225,7 @@ TEST_CASE("server.client.empty_queue-erase") {
   client2->connect();
   EXPECT_TRUE(client->is_connected());
   EXPECT_TRUE(client2->is_connected());
+  EXPECT_FALSE(client->getId() == client2->getId());
 
   auto qname = "server.client.empty_queue-erase";
   QueueSettings qsettings1(qname);
@@ -351,11 +352,13 @@ TEST_CASE("server.client.publish-from-pool") {
   auto qname = "server.client.publish-from-pool";
   QueueSettings qsettings1(qname);
   client->createQueue(qsettings1);
+  std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &qname](const std::string &queueName, const rawData &d,
+  DataHandler handler = [&sended, &ids, &qname](const std::string &queueName, const rawData &d,
                                           Id id) {
     EXPECT_EQ(queueName, qname);
     sended++;
+	ids.insert(id);
   };
   client->addHandler(handler);
 
@@ -366,7 +369,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
-  while (sended != 1 && client2->messagesInPool() != 0) {
+  while (sended != 1 && client2->messagesInPool() != 0 && ids.size()>1) {
     logger("server.client.publish-from-pool sended!=1");
   }
 

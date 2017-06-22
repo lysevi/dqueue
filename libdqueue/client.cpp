@@ -46,7 +46,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
       logger_info("client (", _params.login, "): recv publish");
       auto cs = queries::Publish(d);
       if (this->_handler != nullptr) {
-        _handler(cs.qname, cs.data, 0);
+        _handler(cs.qname, cs.data, _id);
       } else {
         logger_info("client (", _params.login, "):_handler was not be set");
       }
@@ -55,12 +55,15 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     case (NetworkMessage::message_kind)MessageKinds::OK: {
       logger_info("client (", _params.login, "): recv ok");
       auto cs = queries::Ok(d);
-      if (cs.id == LoginConfirmedID) {
-        ENSURE(!_loginConfirmed);
-        _loginConfirmed = true;
-      } else {
-        _messagePool->erase(cs.id);
-      }
+      _messagePool->erase(cs.id);
+      break;
+    }
+
+    case (NetworkMessage::message_kind)MessageKinds::LOGIN_CONFIRM: {
+      logger_info("client (", _params.login, "): login confirm");
+      auto lc = queries::LoginConfirm(d);
+      _id = lc.id;
+      _loginConfirmed = true;
       break;
     }
     default:
@@ -82,6 +85,8 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
   }
 
   size_t messagesInPool() const { return _messagePool->size(); }
+
+  Id getId() const { return _id; }
 
   void addHandler(DataHandler handler) override { _handler = handler; }
 
@@ -140,6 +145,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
   DataHandler _handler;
   MessagePool_Ptr _messagePool;
   bool _loginConfirmed = false;
+  Id _id;
 };
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -167,6 +173,10 @@ void Client::disconnect() {
 
 size_t Client::messagesInPool() const {
   return _impl->messagesInPool();
+}
+
+Id Client::getId() const {
+  return _impl->getId();
 }
 
 void Client::addHandler(DataHandler handler) {

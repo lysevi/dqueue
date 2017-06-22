@@ -29,7 +29,7 @@ public:
   };
 
 
-  EXPORT Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub);
+  EXPORT Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub);
   EXPORT ~Node();
   EXPORT void createQueue(const QueueSettings &qsettings, const Id ownerId);
   EXPORT std::vector<QueueDescription> getQueuesDescription() const;

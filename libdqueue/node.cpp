@@ -14,11 +14,11 @@ struct QueueListener {
 } // namespace
 
 struct Node::Private {
-  Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub)
-      : _settigns(settigns) {
+	Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub) 
+      : _settigns(settigns){
     _handler = dh;
     nextQueueId = 0;
-    _clients = ub;
+	_clients = ub;
   }
 
   void createQueue(const QueueSettings &qsettings, const Id ownerId) {
@@ -64,10 +64,8 @@ struct Node::Private {
   }
 
   void eraseClient(const Id id) {
-    logger_info("node: erase client #", id);
+    logger_info("node: start erasing client id=#", id);
     std::lock(_subscriptions_locker, _queues_locker);
-    _clients->erase(id);
-
     // erase _subscriptions
     for (auto &s : _subscriptions) {
       auto it = s.second.find(id);
@@ -103,7 +101,7 @@ struct Node::Private {
         return kv.second;
       }
     }
-    THROW_EXCEPTION("queue with id=", id, " was not founded.");
+	THROW_EXCEPTION("queue with id=#", id, " was not founded.");
   }
 
   Queue queueByName(const std::string &name) const {
@@ -123,14 +121,14 @@ struct Node::Private {
 
   void changeSubscription(SubscribeActions action, const std::string &queueName,
                           Id clientId) {
-    logger_info("node: changeSubscription:", queueName, ",  #", clientId);
+    logger_info("node: changeSubscription:", queueName, ",  id=#", clientId);
 
     if (!queueIsExists(queueName)) { // check queue is exists.
       switch (action) {
       case dqueue::Node::SubscribeActions::Create:
         break;
       case dqueue::Node::SubscribeActions::Subscribe:
-        logger_fatal("node: subscription to not exists queue: ", queueName, ",  #",
+        logger_fatal("node: subscription to not exists queue: ", queueName, ",  id=#",
                      clientId);
         break;
       case dqueue::Node::SubscribeActions::Unsubscribe:
@@ -140,7 +138,7 @@ struct Node::Private {
 
     {
       if (!_clients->exists(clientId)) {
-        THROW_EXCEPTION("node: clientId=", clientId, " does not exists");
+		  THROW_EXCEPTION("node: clientId=#", clientId, " does not exists");
       }
     }
 

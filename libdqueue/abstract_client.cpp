@@ -42,8 +42,8 @@ void AbstractClient::async_connect() {
     THROW_EXCEPTION("hostname not found.");
   }
   tcp::endpoint ep = *iter;
-  logger_info("client: ", _params.host, ":", _params.port, " - ",
-              ep.address().to_string());
+  logger_info("client(", _params.login, "): start async connection to ", _params.host,
+              ":", _params.port, " - ", ep.address().to_string());
 
   _socket = std::make_shared<boost::asio::ip::tcp::socket>(*_service);
   auto self = this->shared_from_this();
@@ -51,6 +51,7 @@ void AbstractClient::async_connect() {
     if (ec) {
       self->reconnectOnError(nullptr, ec);
     } else {
+      logger_info("client(", self->_params.login, "): connected.");
       AsyncIO::onDataRecvHandler on_d = [self](auto d, auto cancel) {
         self->dataRecv(d, cancel);
       };

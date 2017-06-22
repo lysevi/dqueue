@@ -45,7 +45,7 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.testForReconnection. !server->is_started serverIsNull? ",
+    logger("server.client.testForReconnection. !server->is_started serverIsNull? ",
                 server == nullptr);
   }
 
@@ -58,7 +58,7 @@ void testForReconnection(const size_t clients_count) {
 
   for (auto &c : clients) {
     while (!c->is_connected()) {
-      logger_info("server.client.testForReconnection. client not connected");
+      logger("server.client.testForReconnection. client not connected");
     }
   }
 
@@ -76,13 +76,13 @@ void testForReconnection(const size_t clients_count) {
     if (loginned && users.size() > clients_count) {
       break;
     }
-    logger_info("server.client.testForReconnection. not all clients was loggined");
+    logger("server.client.testForReconnection. not all clients was loggined");
   }
 
   for (auto &c : clients) {
     c->disconnect();
     while (c->is_connected()) {
-      logger_info("server.client.testForReconnection. client is still connected");
+      logger("server.client.testForReconnection. client is still connected");
     }
   }
 
@@ -111,7 +111,7 @@ TEST_CASE("server.client.create_queue") {
   std::thread t(server_thread);
 
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.create_queue !server->is_started serverIsNull? ",
+    logger("server.client.create_queue !server->is_started serverIsNull? ",
                 server == nullptr);
   }
 
@@ -122,7 +122,7 @@ TEST_CASE("server.client.create_queue") {
   client->asyncConnect();
   client2->asyncConnect();
   while (!client->is_connected() || !client2->is_connected()) {
-    logger_info("server.client.create_queue client not connected");
+    logger("server.client.create_queue client not connected");
   }
 
   while (true) {
@@ -130,7 +130,7 @@ TEST_CASE("server.client.create_queue") {
     if (us.size() == size_t(3)) {
       break;
     } else {
-      logger_info("server.client.create_queue erver->getClientDescription is empty ",
+      logger("server.client.create_queue erver->getClientDescription is empty ",
                   server == nullptr);
     }
   }
@@ -145,7 +145,7 @@ TEST_CASE("server.client.create_queue") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.create_queue server->getDescription is empty");
+    logger("server.client.create_queue server->getDescription is empty");
   }
 
   client->subscribe(qname);
@@ -157,7 +157,7 @@ TEST_CASE("server.client.create_queue") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.create_queue server->getDescription is empty");
+    logger("server.client.create_queue server->getDescription is empty");
   }
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
@@ -184,7 +184,7 @@ TEST_CASE("server.client.create_queue") {
 
   client->publish(qname, test_data);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
-    logger_info("server.client.create_queue !sended");
+    logger("server.client.create_queue !sended");
   }
 
   client->unsubscribe(qname);
@@ -195,7 +195,7 @@ TEST_CASE("server.client.create_queue") {
     if (ds.empty()) {
       break;
     }
-    logger_info("server.client.create_queue server->getDescription is not empty");
+    logger("server.client.create_queue server->getDescription is not empty");
   }
 
   server_stop = true;
@@ -212,7 +212,7 @@ TEST_CASE("server.client.empty_queue-erase") {
   std::thread t(server_thread);
 
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
+    logger("server.client.empty_queue-erase !server->is_started serverIsNull? ",
                 server == nullptr);
   }
 
@@ -236,7 +236,7 @@ TEST_CASE("server.client.empty_queue-erase") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
   client->subscribe(qname);
@@ -248,14 +248,14 @@ TEST_CASE("server.client.empty_queue-erase") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
   client->disconnect();
   client2->disconnect();
 
   while (client->is_connected() || client2->is_connected()) {
-    logger_info("server.client.empty_queue-erase client is still connected");
+    logger("server.client.empty_queue-erase client is still connected");
   }
 
   while (true) {
@@ -263,7 +263,7 @@ TEST_CASE("server.client.empty_queue-erase") {
     if (ds.empty()) {
       break;
     }
-    logger_info("server.client.empty_queue-erase server->getDescription is not empty");
+    logger("server.client.empty_queue-erase server->getDescription is not empty");
   }
   client = nullptr;
   client2 = nullptr;
@@ -281,7 +281,7 @@ TEST_CASE("server.client.server-side-queue") {
   std::thread t(server_thread);
 
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.empty_queue-erase !server->is_started serverIsNull? ",
+    logger("server.client.empty_queue-erase !server->is_started serverIsNull? ",
                 server == nullptr);
   }
 
@@ -302,7 +302,7 @@ TEST_CASE("server.client.server-side-queue") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
   client->subscribe(qname);
@@ -313,13 +313,13 @@ TEST_CASE("server.client.server-side-queue") {
       EXPECT_EQ(ds.front().settings.name, qname);
       break;
     }
-    logger_info("server.client.empty_queue-erase server->getDescription is empty");
+    logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
   client->disconnect();
 
   while (client->is_connected()) {
-    logger_info("server.client.empty_queue-erase client is still connected");
+    logger("server.client.empty_queue-erase client is still connected");
   }
 
   auto ds = server->getDescription();
@@ -339,7 +339,7 @@ TEST_CASE("server.client.publish-from-pool") {
   std::thread t(server_thread);
 
   while (server == nullptr || !server->is_started()) {
-    logger_info("server.client.publish-from-pool !server->is_started serverIsNull? ",
+    logger("server.client.publish-from-pool !server->is_started serverIsNull? ",
                 server == nullptr);
   }
 
@@ -367,7 +367,7 @@ TEST_CASE("server.client.publish-from-pool") {
   EXPECT_TRUE(client2->is_connected());
 
   while (sended != 1 && client2->messagesInPool() != 0) {
-    logger_info("server.client.publish-from-pool sended!=1");
+    logger("server.client.publish-from-pool sended!=1");
   }
 
   server_stop = true;

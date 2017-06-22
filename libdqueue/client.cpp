@@ -53,7 +53,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
       break;
     }
     case (NetworkMessage::message_kind)MessageKinds::OK: {
-      logger_info("client: recv ok");
+      logger_info("client (", _params.login, "): recv ok");
       auto cs = queries::Ok(d);
       if (cs.id == LoginConfirmedID) {
         ENSURE(!_loginConfirmed);

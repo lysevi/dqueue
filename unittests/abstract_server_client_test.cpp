@@ -28,7 +28,7 @@ struct testable_client : public AbstractClient {
   ~testable_client() {}
 
   void onConnect() override {
-    logger_info("client: send hello ");
+    logger("client: send hello ");
 
     auto nd = std::make_shared<NetworkMessage>(1, NetworkMessage::message_kind(1));
 
@@ -154,14 +154,14 @@ void testForReconnection(const size_t clients_count) {
   server_stop = false;
   std::thread t(server_thread);
   while (abstract_server == nullptr || !abstract_server->is_started()) {
-    logger_info("testForReconnection. !server->is_started serverIsNull? ",
+    logger("testForReconnection. !server->is_started serverIsNull? ",
                 abstract_server == nullptr);
     service.poll_one();
   }
 
   for (auto &c : clients) {
     while (!c->is_connected()) {
-      logger_info("testForReconnection. client not connected");
+      logger("testForReconnection. client not connected");
       service.poll_one();
     }
   }
@@ -172,7 +172,7 @@ void testForReconnection(const size_t clients_count) {
 
   for (auto &c : clients) {
     while (!abstract_server->all_id_gt(10, clients_count) && c->message_one < 10) {
-      logger_info("testForReconnection. client.message_one: ", c->message_one);
+      logger("testForReconnection. client.message_one: ", c->message_one);
       service.poll_one();
     }
   }
@@ -187,7 +187,7 @@ void testForReconnection(const size_t clients_count) {
   for (auto &c : clients) {
     EXPECT_TRUE(c->success);
     while (c->is_connected()) {
-      logger_info("testForReconnection. client is still connected");
+      logger("testForReconnection. client is still connected");
       service.poll_one();
     }
   }
@@ -198,7 +198,7 @@ void testForReconnection(const size_t clients_count) {
   for (auto &c : clients) {
     while (!c->is_connected() &&
            (abstract_server == nullptr || !abstract_server->is_started())) {
-      logger_info("testForReconnection. client and server is not connected");
+      logger("testForReconnection. client and server is not connected");
       service.poll_one();
     }
   }
@@ -209,7 +209,7 @@ void testForReconnection(const size_t clients_count) {
   }
   for (auto &c : clients) {
     while (c->is_connected()) {
-      logger_info("testForReconnection. client is still connected");
+      logger("testForReconnection. client is still connected");
       service.poll_one();
     }
   }

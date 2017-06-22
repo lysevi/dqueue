@@ -32,7 +32,7 @@ public:
 
   void setLogin(Id id, const std::string &login) {
     std::lock_guard<std::shared_mutex> sl(_locker);
-    logger_info("node: set login #", id, " - '", login, "'");
+    logger_info("node: set login id=#", id, " - '", login, "'");
     _users[id].login = login;
   }
 
@@ -40,9 +40,10 @@ public:
     std::lock_guard<std::shared_mutex> sl(_locker);
     auto it = _users.find(id);
     if (it != _users.end()) {
-      logger_info("node: erase client #", id, " login:", it->second.login);
+      logger_info("node: client id=#", id, ", login:", it->second.login, " erased");
+      _users.erase(it);
     } else {
-      THROW_EXCEPTION("node: user #", id, "not exists");
+      THROW_EXCEPTION("node: user id=#", id, "not exists");
     }
   }
 

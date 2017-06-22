@@ -14,19 +14,20 @@ struct QueueListener {
 } // namespace
 
 struct Node::Private {
-  Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub) : _settigns(settigns) {
+  Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub)
+      : _settigns(settigns) {
     _handler = dh;
     nextQueueId = 0;
-	_clients = ub;
+    _clients = ub;
   }
 
   void createQueue(const QueueSettings &qsettings, const Id ownerId) {
     ENSURE(!qsettings.name.empty());
     logger_info("node: create queue:", qsettings.name, ", owner: #", ownerId);
 
-	if (!_clients->exists(ownerId)) {
-		THROW_EXCEPTION("node: clientId=", ownerId, " does not exists");
-	}
+    if (!_clients->exists(ownerId)) {
+      THROW_EXCEPTION("node: clientId=", ownerId, " does not exists");
+    }
 
     {
       std::lock_guard<std::shared_mutex> lg(_queues_locker);
@@ -62,7 +63,6 @@ struct Node::Private {
     return result;
   }
 
-
   void eraseClient(const Id id) {
     logger_info("node: erase client #", id);
     std::lock(_subscriptions_locker, _queues_locker);
@@ -96,7 +96,6 @@ struct Node::Private {
     _queues_locker.unlock();
   }
 
-  
   Queue queueById(int id) const {
     std::shared_lock<std::shared_mutex> sl(_queues_locker);
     for (auto kv : _queues) {
@@ -116,10 +115,28 @@ struct Node::Private {
     return it->second;
   }
 
+  bool queueIsExists(const std::string &name) const {
+    std::shared_lock<std::shared_mutex> sl(_queues_locker);
+    auto it = _queues.find(name);
+    return (it != _queues.end());
+  }
+
   void changeSubscription(SubscribeActions action, const std::string &queueName,
-	  Id clientId) {
+                          Id clientId) {
     logger_info("node: changeSubscription:", queueName, ",  #", clientId);
-    queueByName(queueName);
+
+    if (!queueIsExists(queueName)) { // check queue is exists.
+      switch (action) {
+      case dqueue::Node::SubscribeActions::Create:
+        break;
+      case dqueue::Node::SubscribeActions::Subscribe:
+        logger_fatal("node: subscription to not exists queue: ", queueName, ",  #",
+                     clientId);
+        break;
+      case dqueue::Node::SubscribeActions::Unsubscribe:
+        return;
+      }
+    }
 
     {
       if (!_clients->exists(clientId)) {
@@ -127,9 +144,8 @@ struct Node::Private {
       }
     }
 
-    bool isOwner = action == dqueue::Node::SubscribeActions::Create;
-
     std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
+    bool isOwner = action == dqueue::Node::SubscribeActions::Create;
 
     switch (action) {
     case dqueue::Node::SubscribeActions::Create:
@@ -189,7 +205,7 @@ struct Node::Private {
   DataHandler _handler;
 };
 
-Node::Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr&ub)
+Node::Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub)
     : _impl(std::make_unique<Node::Private>(settigns, dh, ub)) {}
 
 Node::~Node() {
@@ -208,9 +224,8 @@ void Node::eraseClient(const Id id) {
   _impl->eraseClient(id);
 }
 
-
 void Node::changeSubscription(Node::SubscribeActions action, const std::string &queueName,
-	Id clientId) {
+                              Id clientId) {
   return _impl->changeSubscription(action, queueName, clientId);
 }
 

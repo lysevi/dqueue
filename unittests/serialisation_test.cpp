@@ -11,6 +11,15 @@ using namespace dqueue;
 using namespace dqueue::utils;
 using namespace dqueue::queries;
 
+TEST_CASE("serialisation.ok") {
+  Ok ok{std::numeric_limits<uint64_t>::max()};
+  auto nd = ok.toNetworkMessage();
+  EXPECT_EQ(nd->cast_to_header()->kind, (NetworkMessage::message_kind)MessageKinds::OK);
+
+  auto repacked = Ok(nd);
+  EXPECT_EQ(repacked.id, ok.id);
+}
+
 TEST_CASE("serialisation.size_of_args") {
   EXPECT_EQ(serialisation::Scheme<int>::capacity(int(1)), sizeof(int));
   auto sz = serialisation::Scheme<int, int>::capacity(int(1), int(1));
@@ -55,7 +64,8 @@ TEST_CASE("serialisation.createQueue") {
   EXPECT_EQ(qs.name, name);
 
   auto nd = qs.toNetworkMessage();
-  EXPECT_EQ(nd->cast_to_header()->kind, 0);
+  EXPECT_EQ(nd->cast_to_header()->kind,
+            (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE);
 
   CreateQueue repacked(nd);
   EXPECT_EQ(repacked.name.size(), name.size());
@@ -77,7 +87,7 @@ TEST_CASE("serialisation.subscribe") {
 TEST_CASE("serialisation.publish") {
   std::string qname = "serialisation.publish";
   std::vector<uint8_t> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  Publish pb{qname, data};
+  Publish pb{qname, data, std::numeric_limits<uint64_t>::max()};
   auto nd = pb.toNetworkMessage();
   EXPECT_EQ(nd->cast_to_header()->kind,
             (NetworkMessage::message_kind)MessageKinds::PUBLISH);
@@ -87,6 +97,8 @@ TEST_CASE("serialisation.publish") {
   EXPECT_EQ(repacked.qname.size(), qname.size());
 
   EXPECT_EQ(repacked.data.size(), data.size());
-  EXPECT_TRUE(
-      std::equal(data.begin(), data.end(), repacked.data.begin(), repacked.data.end()));
+  bool isdataEqual =
+      std::equal(data.begin(), data.end(), repacked.data.begin(), repacked.data.end());
+  EXPECT_TRUE(isdataEqual);
+  EXPECT_EQ(repacked.messageId, pb.messageId);
 }

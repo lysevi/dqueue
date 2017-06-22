@@ -2,6 +2,7 @@
 #include <libdqueue/kinds.h>
 #include <libdqueue/queries.h>
 #include <cstring>
+#include <shared_mutex>
 
 using namespace dqueue;
 
@@ -37,6 +38,13 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
       }
       break;
     }
+    case (NetworkMessage::message_kind)MessageKinds::OK: {
+      logger_info("client: recv ok");
+      auto cs = queries::Ok(d);
+      std::lock_guard<std::shared_mutex> lg(_locker);
+      --_messagesInPool;
+      break;
+    }
     default:
       THROW_EXCEPTION("unknow message kind: ", hdr->kind);
     }
@@ -46,6 +54,11 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
                       const boost::system::error_code &err) override {}
 
   void addHandler(DataHandler handler) override { _handler = handler; }
+
+  size_t messagesInPool() const {
+    std::shared_lock<std::shared_mutex> lg(_locker);
+    return _messagesInPool;
+  }
 
   void createQueue(const QueueSettings &settings) override {
     logger_info("client: createQueue ", settings.name);
@@ -79,11 +92,16 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
 
   void publish(const std::string &qname, const std::vector<uint8_t> &data) override {
     logger_info("client: publish ", qname);
-    queries::Publish pb(qname, data);
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    _messagesInPool++;
+    queries::Publish pb(qname, data, _nextMessageId++);
     auto nd = pb.toNetworkMessage();
     this->_async_connection->send(nd);
   }
 
+  mutable std::shared_mutex _locker;
+  uint64_t _nextMessageId = 0;
+  size_t _messagesInPool = 0;
   DataHandler _handler;
 };
 
@@ -108,6 +126,10 @@ void Client::connect() {
 
 void Client::disconnect() {
   return _impl->disconnect();
+}
+
+size_t Client::messagesInPool() const {
+  return _impl->messagesInPool();
 }
 
 void Client::addHandler(DataHandler handler) {

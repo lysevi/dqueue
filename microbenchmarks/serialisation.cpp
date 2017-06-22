@@ -10,7 +10,7 @@ class Serialisation : public benchmark::Fixture {
     _CreateQueue = std::make_unique<CreateQueue>(qname);
     _ChangeSubscribe = std::make_unique<ChangeSubscribe>(qname);
     _Publish = std::make_unique<Publish>(
-        qname, std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        qname, std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, uint64_t(1));
   }
 
   virtual void TearDown(const ::benchmark::State &) {}

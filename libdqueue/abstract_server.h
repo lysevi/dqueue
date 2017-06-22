@@ -42,6 +42,7 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
+  EXPORT void sendTo(ClientConnection& i, NetworkMessage_ptr &d);
   EXPORT void sendTo(Id id, NetworkMessage_ptr &d);
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;

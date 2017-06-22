@@ -169,7 +169,7 @@ TEST_CASE("server.client.create_queue") {
   client2->addHandler(handler);
 
   client->publish(qname, test_data);
-  while (sended != int(3)) {
+  while (sended != int(3) && client->messagesInPool()!=size_t(0)) {
     logger_info("server.client.create_queue !sended");
   }
 

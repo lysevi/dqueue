@@ -10,6 +10,26 @@
 namespace dqueue {
 namespace queries {
 
+struct Ok {
+  uint64_t id;
+
+  using Scheme = serialisation::Scheme<uint64_t>;
+
+  Ok(uint64_t id_) { id = id_; }
+
+  Ok(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), id); }
+
+  NetworkMessage_ptr toNetworkMessage() const {
+    auto neededSize = Scheme::capacity(id);
+
+    auto nd = std::make_shared<NetworkMessage>(
+        neededSize, (NetworkMessage::message_kind)MessageKinds::OK);
+
+    Scheme::write(nd->value(), id);
+    return nd;
+  }
+};
+
 struct CreateQueue {
   std::string name;
 
@@ -53,25 +73,28 @@ struct ChangeSubscribe {
 struct Publish {
   std::string qname;
   std::vector<uint8_t> data;
+  uint64_t messageId;
 
-  using Scheme = serialisation::Scheme<std::string, std::vector<uint8_t>>;
+  using Scheme = serialisation::Scheme<std::string, std::vector<uint8_t>, uint64_t>;
 
-  Publish(const std::string &queue, const std::vector<uint8_t> &data_) {
+  Publish(const std::string &queue, const std::vector<uint8_t> &data_,
+          uint64_t messageId_) {
     qname = queue;
     data = data_;
+    messageId = messageId_;
   }
 
   Publish(const NetworkMessage_ptr &nd) {
     auto it = nd->value();
-    Scheme::read(it, qname, data);
+    Scheme::read(it, qname, data, messageId);
   }
 
   NetworkMessage_ptr toNetworkMessage() const {
-    auto neededSize = Scheme::capacity(qname, data);
+    auto neededSize = Scheme::capacity(qname, data, messageId);
     auto nd = std::make_shared<NetworkMessage>(
         neededSize, (NetworkMessage::message_kind)MessageKinds::PUBLISH);
 
-    Scheme::write(nd->value(), qname, data);
+    Scheme::write(nd->value(), qname, data, messageId);
     return nd;
   }
 };

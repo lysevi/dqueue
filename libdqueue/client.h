@@ -19,6 +19,7 @@ public:
   EXPORT void connect();
   EXPORT void disconnect();
   EXPORT bool is_connected();
+  EXPORT size_t messagesInPool()const; // count dont sended messages.
 
   EXPORT void addHandler(DataHandler handler) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
@@ -26,7 +27,6 @@ public:
   EXPORT void unsubscribe(const std::string &qname) override;
   EXPORT void publish(const std::string &qname,
                       const std::vector<uint8_t> &data) override;
-
 protected:
   struct Private;
   std::shared_ptr<Private> _impl;

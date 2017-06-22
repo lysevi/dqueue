@@ -9,6 +9,7 @@
 namespace dqueue {
 
 using rawData = std::vector<uint8_t>;
+// TODO Id must be std::vector<Id> for speedup and less memory allocations.
 using DataHandler =
     std::function<void(const std::string &queueName, const rawData &d, Id id)>;
 

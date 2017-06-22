@@ -109,8 +109,8 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
     std::shared_ptr<ClientConnection> new_client = nullptr;
     {
       std::lock_guard<std::mutex> lg(self->_locker_connections);
-      new_client =
-          std::make_shared<AbstractServer::ClientConnection>((Id)self->_next_id, sock, self);
+      new_client = std::make_shared<AbstractServer::ClientConnection>((Id)self->_next_id,
+                                                                      sock, self);
       self->_next_id++;
     }
 
@@ -141,11 +141,16 @@ void AbstractServer::stopServer() {
   }
 }
 
+// TODO ClientConnection - must be shared_ptr
+void AbstractServer::sendTo(ClientConnection &i, NetworkMessage_ptr &d) {
+  i.sendData(d);
+}
+
 void AbstractServer::sendTo(Id id, NetworkMessage_ptr &d) {
   std::lock_guard<std::mutex> lg(this->_locker_connections);
   for (auto c : _connections) {
     if (c->get_id() == id) {
-      c->sendData(d);
+      sendTo(*c, d);
       return;
     }
   }

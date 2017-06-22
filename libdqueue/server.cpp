@@ -1,7 +1,7 @@
 #include <libdqueue/node.h>
 #include <libdqueue/queries.h>
-#include <libdqueue/users.h>
 #include <libdqueue/server.h>
+#include <libdqueue/users.h>
 
 #include <functional>
 #include <string>
@@ -12,10 +12,10 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
   Private(boost::asio::io_service *service, AbstractServer::params &p)
       : AbstractServer(service, p) {
     DataHandler dhandler = [this](const std::string &queueName, const rawData &rd,
-		Id id) { this->onSendToClient(queueName, rd, id); };
-	_users = UserBase::create();
+                                  Id id) { this->onSendToClient(queueName, rd, id); };
+    _users = UserBase::create();
     _node = std::make_unique<Node>(Node::Settings(), dhandler, _users);
-	_users->append({"server", ServerID});
+    _users->append({"server", ServerID});
   }
 
   virtual ~Private() { _node->eraseClient(ServerID); }
@@ -38,8 +38,9 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
         _dh(queueName, rd, id);
       }
     } else {
+      std::lock_guard<std::mutex> lg(_locker);
       // TODO make one allocation in onNewMessage
-      queries::Publish pub(queueName, rd);
+      queries::Publish pub(queueName, rd, _nextMessageId++);
       auto nd = pub.toNetworkMessage();
       this->sendTo(id, nd);
     }
@@ -73,6 +74,7 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
       logger("server: #", i.get_id(), " publish");
       auto cs = queries::Publish(d);
       _node->publish(cs.qname, cs.data);
+      sendOk(i, cs.messageId);
       break;
     }
     default:
@@ -80,27 +82,30 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
     }
   }
 
+  void sendOk(ClientConnection &i, uint64_t messageId) {
+    auto nd = queries::Ok(messageId).toNetworkMessage();
+    this->sendTo(i, nd);
+  }
+
   ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) {
     // TODO logic must be implemented in call code
     User cl;
     cl.id = i.get_id();
-	cl.login = "not set";
-	_users->append(cl);
+    cl.login = "not set";
+    _users->append(cl);
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 
   void onDisconnect(const ClientConnection &i) override {
     _users->erase(i.get_id());
-	_node->eraseClient(i.get_id());
+    _node->eraseClient(i.get_id());
   }
 
   std::vector<Node::QueueDescription> getDescription() const {
     return _node->getQueuesDescription();
   }
 
-  std::vector<User> users() const {
-	  return _users->users();
-  }
+  std::vector<User> users() const { return _users->users(); }
 
   void createQueue(const QueueSettings &settings) override {
     _node->createQueue(settings, ServerID);
@@ -120,6 +125,8 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
     _node->publish(qname, data);
   }
 
+  std::mutex _locker;
+  uint64_t _nextMessageId = 0;
   std::unique_ptr<Node> _node;
   DataHandler _dh;
   UserBase_Ptr _users;
@@ -149,7 +156,7 @@ std::vector<Node::QueueDescription> Server::getDescription() const {
 }
 
 std::vector<User> Server::users() const {
-	return _impl->users();
+  return _impl->users();
 }
 
 void Server::addHandler(DataHandler dh) {

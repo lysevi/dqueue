@@ -19,7 +19,6 @@ using namespace dqueue::utils;
 
 namespace abstract_server_client_ns {
 
-
 struct testable_client : public AbstractClient {
   size_t message_one = 0;
 
@@ -63,7 +62,7 @@ struct testable_server : public AbstractServer {
   std::map<Id, size_t> id2count;
   std::mutex _locker;
 
-  bool all_id_gt(size_t v) {
+  bool all_id_gt(size_t v, size_t clientsCount) {
     std::lock_guard<std::mutex> lg(_locker);
     if (id2count.empty()) {
       return false;
@@ -75,7 +74,7 @@ struct testable_server : public AbstractServer {
         break;
       }
     }
-    return result;
+    return result && clientsCount == id2count.size();
   }
 
   testable_server(io_service *service, const AbstractServer::params &p)
@@ -129,17 +128,17 @@ bool server_stop = false;
 std::shared_ptr<testable_server> abstract_server = nullptr;
 
 void server_thread() {
-	boost::asio::io_service service;
-	AbstractServer::params p;
-	p.port = 4040;
-	abstract_server = std::make_shared<testable_server>(&service, p);
+  boost::asio::io_service service;
+  AbstractServer::params p;
+  p.port = 4040;
+  abstract_server = std::make_shared<testable_server>(&service, p);
 
-	abstract_server->serverStart();
-	while (!server_stop) {
-		service.poll_one();
-	}
-	abstract_server->stopServer();
-	abstract_server = nullptr;
+  abstract_server->serverStart();
+  while (!server_stop) {
+    service.poll_one();
+  }
+  abstract_server->stopServer();
+  abstract_server = nullptr;
 }
 
 void testForReconnection(const size_t clients_count) {
@@ -168,11 +167,11 @@ void testForReconnection(const size_t clients_count) {
   }
 
   for (auto &c : clients) {
-	  EXPECT_TRUE(c->is_connected());
+    EXPECT_TRUE(c->is_connected());
   }
 
   for (auto &c : clients) {
-    while (!abstract_server->all_id_gt(10) && c->message_one < 10) {
+    while (!abstract_server->all_id_gt(10, clients_count) && c->message_one < 10) {
       logger_info("testForReconnection. client.message_one: ", c->message_one);
       service.poll_one();
     }
@@ -223,7 +222,7 @@ void testForReconnection(const size_t clients_count) {
   }
   t.join();
 }
-} // namespace
+} // namespace abstract_server_client_ns
 
 TEST_CASE("reconnetion.1") {
   const size_t connections_count = 1;

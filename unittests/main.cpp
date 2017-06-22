@@ -93,8 +93,8 @@ int main(int argc, char **argv) {
   Catch::Session sesssion;
   sesssion.configData().showDurations = Catch::ShowDurations::OrNot::Always;
   int result = sesssion.run(_argc, _argv);
-  /*if (UnitTestLogger::verbose) {
+  if (UnitTestLogger::verbose) {
     delete[] _argv;
-  }*/
+  }
   return (result < 0xff ? result : 0xff);
 }

@@ -72,8 +72,8 @@ struct ChangeSubscribe {
 
 struct Publish {
   std::string qname;
-  std::vector<uint8_t> data;
   uint64_t messageId;
+  std::vector<uint8_t> data;
 
   using Scheme = serialisation::Scheme<std::string, std::vector<uint8_t>, uint64_t>;
 

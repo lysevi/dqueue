@@ -169,7 +169,7 @@ TEST_CASE("server.client.create_queue") {
   client2->addHandler(handler);
 
   client->publish(qname, test_data);
-  while (sended != int(3) && client->messagesInPool()!=size_t(0)) {
+  while (sended != int(3) && client->messagesInPool() != size_t(0)) {
     logger_info("server.client.create_queue !sended");
   }
 
@@ -313,6 +313,53 @@ TEST_CASE("server.client.server-side-queue") {
 
   auto ds = server->getDescription();
   EXPECT_EQ(ds.size(), size_t(1));
+
+  server_stop = true;
+  while (server != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  t.join();
+}
+
+TEST_CASE("server.client.publish-from-pool") {
+  using namespace server_client_test;
+  AbstractClient::Params p;
+  p.host = "localhost";
+  p.port = 4040;
+  p.auto_reconnection = true;
+
+  server_stop = false;
+  std::thread t(server_thread);
+
+  while (server == nullptr || !server->is_started()) {
+    logger_info("server.client.publish-from-pool !server->is_started serverIsNull? ",
+                server == nullptr);
+  }
+
+  auto client = std::make_shared<Client>(service, p);
+  client->connect();
+  EXPECT_TRUE(client->is_connected());
+
+  auto qname = "server.client.publish-from-pool";
+  QueueSettings qsettings1(qname);
+  client->createQueue(qsettings1);
+  int sended = 0;
+  DataHandler handler = [&sended, &qname](const std::string &queueName, const rawData &d,
+                                          Id id) {
+    EXPECT_EQ(queueName, qname);
+    sended++;
+  };
+  client->addHandler(handler);
+
+  auto client2 = std::make_shared<Client>(service, p);
+  EXPECT_FALSE(client2->is_connected());
+  client2->publish(qname, {1, 2, 3});
+  client2->connect();
+  EXPECT_TRUE(client2->is_connected());
+
+  while (sended != 1 && client2->messagesInPool()!=0) {
+    logger_info("server.client.publish-from-pool sended!=1");
+  }
 
   server_stop = true;
   while (server != nullptr) {

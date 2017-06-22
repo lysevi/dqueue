@@ -1,5 +1,6 @@
 #include <libdqueue/client.h>
 #include <libdqueue/kinds.h>
+#include <libdqueue/memory_message_pool.h>
 #include <libdqueue/queries.h>
 #include <cstring>
 #include <shared_mutex>
@@ -9,7 +10,9 @@ using namespace dqueue;
 struct Client::Private final : virtual public AbstractClient, public IQueueClient {
 
   Private(boost::asio::io_service *service, const AbstractClient::Params &_params)
-      : AbstractClient(service, _params) {}
+      : AbstractClient(service, _params) {
+    _messagePool = std::make_shared<MemoryMessagePool>();
+  }
 
   virtual ~Private() {}
 
@@ -20,7 +23,12 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     }
   }
 
-  void onConnect() override {}
+  void onConnect() override {
+    auto all = _messagePool->all();
+    for (auto p : all) {
+      this->publish_inner(p);
+    }
+  }
 
   void onMessageSended(const NetworkMessage_ptr &d) override {}
 
@@ -41,8 +49,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     case (NetworkMessage::message_kind)MessageKinds::OK: {
       logger_info("client: recv ok");
       auto cs = queries::Ok(d);
-      std::lock_guard<std::shared_mutex> lg(_locker);
-      --_messagesInPool;
+      _messagePool->erase(cs.id);
       break;
     }
     default:
@@ -55,16 +62,13 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
 
   void addHandler(DataHandler handler) override { _handler = handler; }
 
-  size_t messagesInPool() const {
-    std::shared_lock<std::shared_mutex> lg(_locker);
-    return _messagesInPool;
-  }
+  size_t messagesInPool() const { return _messagePool->size(); }
 
   void createQueue(const QueueSettings &settings) override {
     logger_info("client: createQueue ", settings.name);
     queries::CreateQueue cq(settings.name);
     auto nd = cq.toNetworkMessage();
-    this->_async_connection->send(nd);
+    send(nd);
   }
 
   void subscribe(const std::string &qname) override {
@@ -76,7 +80,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     nd->cast_to_header()->kind =
         static_cast<NetworkMessage::message_kind>(MessageKinds::SUBSCRIBE);
 
-    this->_async_connection->send(nd);
+    send(nd);
   }
 
   void unsubscribe(const std::string &qname) override {
@@ -87,22 +91,33 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     nd->cast_to_header()->kind =
         static_cast<NetworkMessage::message_kind>(MessageKinds::UNSUBSCRIBE);
 
-    this->_async_connection->send(nd);
+    send(nd);
   }
 
   void publish(const std::string &qname, const std::vector<uint8_t> &data) override {
-    logger_info("client: publish ", qname);
     std::lock_guard<std::shared_mutex> lg(_locker);
-    _messagesInPool++;
     queries::Publish pb(qname, data, _nextMessageId++);
+    _messagePool->append(pb);
+
+    publish_inner(pb);
+  }
+
+  void publish_inner(const queries::Publish &pb) {
+    logger_info("client: publish ", pb.qname);
     auto nd = pb.toNetworkMessage();
-    this->_async_connection->send(nd);
+    send(nd);
+  }
+
+  void send(const NetworkMessage_ptr &nd) {
+    if (_async_connection != nullptr) {
+      _async_connection->send(nd);
+    }
   }
 
   mutable std::shared_mutex _locker;
   uint64_t _nextMessageId = 0;
-  size_t _messagesInPool = 0;
   DataHandler _handler;
+  MessagePool_Ptr _messagePool;
 };
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)

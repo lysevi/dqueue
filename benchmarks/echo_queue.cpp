@@ -126,7 +126,10 @@ int main(int argc, char *argv[]) {
 
   dqueue::DataHandler client_handler =
       [&clients](const std::string &queueName, const dqueue::rawData &d, dqueue::Id id) {
-        clients[id]->publish(queueName, d);
+        auto cl = clients[id];
+        if (cl->messagesInPool() < size_t(5)) {
+          cl->publish(queueName, d);
+        }
       };
 
   for (size_t i = 0; i < clients_count; ++i) {

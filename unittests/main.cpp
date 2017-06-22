@@ -24,10 +24,14 @@ public:
       ss << "[dbg] " << msg << std::endl;
       break;
     }
-    if (verbose) {
-      std::cout << ss.str();
+    if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
+      std::cerr << ss.str();
+    } else {
+      if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
+        std::cout << ss.str();
+      }
+      _messages.push_back(ss.str());
     }
-    _messages.push_back(ss.str());
   }
 
   void dump_all() {
@@ -40,7 +44,7 @@ private:
   std::list<std::string> _messages;
 };
 
-bool UnitTestLogger::verbose = true;
+bool UnitTestLogger::verbose = false;
 
 struct LoggerControl : Catch::TestEventListenerBase {
   using TestEventListenerBase::TestEventListenerBase; // inherit constructor

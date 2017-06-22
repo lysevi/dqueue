@@ -23,7 +23,13 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
     }
   }
 
+  bool isClientConnected() const { return _loginConfirmed; }
+
   void onConnect() override {
+    queries::Login lg(this->_params.login);
+    _loginConfirmed = false;
+    this->send(lg.toNetworkMessage());
+
     auto all = _messagePool->all();
     for (auto p : all) {
       this->publish_inner(p);
@@ -37,42 +43,57 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
 
     switch (hdr->kind) {
     case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
-      logger_info("client: recv publish");
+      logger_info("client (", _params.login, "): recv publish");
       auto cs = queries::Publish(d);
       if (this->_handler != nullptr) {
         _handler(cs.qname, cs.data, 0);
       } else {
-        logger_info("client: _handler was not be set");
+        logger_info("client (", _params.login, "):_handler was not be set");
       }
       break;
     }
     case (NetworkMessage::message_kind)MessageKinds::OK: {
       logger_info("client: recv ok");
       auto cs = queries::Ok(d);
-      _messagePool->erase(cs.id);
+      if (cs.id == LoginConfirmedID) {
+        ENSURE(!_loginConfirmed);
+        _loginConfirmed = true;
+      } else {
+        _messagePool->erase(cs.id);
+      }
       break;
     }
     default:
-      THROW_EXCEPTION("unknow message kind: ", hdr->kind);
+      THROW_EXCEPTION("client (", _params.login, "):unknow message kind: ", hdr->kind);
     }
   }
 
   void onNetworkError(const NetworkMessage_ptr &d,
-                      const boost::system::error_code &err) override {}
-
-  void addHandler(DataHandler handler) override { _handler = handler; }
+                      const boost::system::error_code &err) override {
+    bool isError = err == boost::asio::error::operation_aborted ||
+                   err == boost::asio::error::connection_reset ||
+                   err == boost::asio::error::eof;
+    if (isError && !isStoped) {
+      int errCode = err.value();
+      std::string msg = err.message();
+      logger_fatal("client (", _params.login, "): network error (", errCode, ") - ", msg);
+    }
+    _loginConfirmed = false;
+  }
 
   size_t messagesInPool() const { return _messagePool->size(); }
 
+  void addHandler(DataHandler handler) override { _handler = handler; }
+
   void createQueue(const QueueSettings &settings) override {
-    logger_info("client: createQueue ", settings.name);
+    logger_info("client (", _params.login, "): createQueue ", settings.name);
     queries::CreateQueue cq(settings.name);
     auto nd = cq.toNetworkMessage();
     send(nd);
   }
 
   void subscribe(const std::string &qname) override {
-    logger_info("client: subscribe ", qname);
+    logger_info("client (", _params.login, "): subscribe ", qname);
 
     queries::ChangeSubscribe cs(qname);
 
@@ -84,7 +105,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
   }
 
   void unsubscribe(const std::string &qname) override {
-    logger_info("client: unsubscribe ", qname);
+    logger_info("client (", _params.login, "): unsubscribe ", qname);
     queries::ChangeSubscribe cs(qname);
 
     auto nd = cs.toNetworkMessage();
@@ -103,7 +124,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
   }
 
   void publish_inner(const queries::Publish &pb) {
-    logger_info("client: publish ", pb.qname);
+    logger_info("client (", _params.login, "): publish ", pb.qname);
     auto nd = pb.toNetworkMessage();
     send(nd);
   }
@@ -118,6 +139,7 @@ struct Client::Private final : virtual public AbstractClient, public IQueueClien
   uint64_t _nextMessageId = 0;
   DataHandler _handler;
   MessagePool_Ptr _messagePool;
+  bool _loginConfirmed = false;
 };
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -132,7 +154,7 @@ void Client::asyncConnect() {
 }
 
 bool Client::is_connected() {
-  return _impl->is_connected();
+  return _impl->isClientConnected();
 }
 
 void Client::connect() {

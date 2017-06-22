@@ -20,6 +20,16 @@ TEST_CASE("serialisation.ok") {
   EXPECT_EQ(repacked.id, ok.id);
 }
 
+TEST_CASE("serialisation.login") {
+  Login lg{"login"};
+  auto nd = lg.toNetworkMessage();
+  EXPECT_EQ(nd->cast_to_header()->kind,
+            (NetworkMessage::message_kind)MessageKinds::LOGIN);
+
+  auto repacked = Login(nd);
+  EXPECT_EQ(repacked.login, lg.login);
+}
+
 TEST_CASE("serialisation.size_of_args") {
   EXPECT_EQ(serialisation::Scheme<int>::capacity(int(1)), sizeof(int));
   auto sz = serialisation::Scheme<int, int>::capacity(int(1), int(1));

@@ -40,9 +40,7 @@ void server_thread() {
 }
 
 void testForReconnection(const size_t clients_count) {
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
+  AbstractClient::Params p("empty", "localhost", 4040);
 
   server_stop = false;
   std::thread t(server_thread);
@@ -53,6 +51,7 @@ void testForReconnection(const size_t clients_count) {
 
   std::vector<std::shared_ptr<Client>> clients(clients_count);
   for (size_t i = 0; i < clients_count; i++) {
+    p.login = "client_" + std::to_string(i);
     clients[i] = std::make_shared<Client>(service, p);
     clients[i]->asyncConnect();
   }
@@ -61,6 +60,23 @@ void testForReconnection(const size_t clients_count) {
     while (!c->is_connected()) {
       logger_info("server.client.testForReconnection. client not connected");
     }
+  }
+
+  while (true) {
+    auto users = server->users();
+    bool loginned = false;
+    for (auto u : users) {
+      if (u.login != "server" && u.login.substr(0, 6) != "client") {
+        loginned = false;
+        break;
+      } else {
+        loginned = true;
+      }
+    }
+    if (loginned && users.size() > clients_count) {
+      break;
+    }
+    logger_info("server.client.testForReconnection. not all clients was loggined");
   }
 
   for (auto &c : clients) {
@@ -91,10 +107,6 @@ TEST_CASE("server.client.10") {
 TEST_CASE("server.client.create_queue") {
   using namespace server_client_test;
 
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
-
   server_stop = false;
   std::thread t(server_thread);
 
@@ -103,8 +115,10 @@ TEST_CASE("server.client.create_queue") {
                 server == nullptr);
   }
 
-  auto client = std::make_shared<Client>(service, p);
-  auto client2 = std::make_shared<Client>(service, p);
+  auto client = std::make_shared<Client>(
+      service, AbstractClient::Params("client1", "localhost", 4040));
+  auto client2 = std::make_shared<Client>(
+      service, AbstractClient::Params("client2", "localhost", 4040));
   client->asyncConnect();
   client2->asyncConnect();
   while (!client->is_connected() || !client2->is_connected()) {
@@ -193,9 +207,6 @@ TEST_CASE("server.client.create_queue") {
 
 TEST_CASE("server.client.empty_queue-erase") {
   using namespace server_client_test;
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
 
   server_stop = false;
   std::thread t(server_thread);
@@ -205,8 +216,10 @@ TEST_CASE("server.client.empty_queue-erase") {
                 server == nullptr);
   }
 
-  auto client = std::make_shared<Client>(service, p);
-  auto client2 = std::make_shared<Client>(service, p);
+  auto client = std::make_shared<Client>(
+      service, AbstractClient::Params("client1", "localhost", 4040));
+  auto client2 = std::make_shared<Client>(
+      service, AbstractClient::Params("client2", "localhost", 4040));
 
   client->connect();
   client2->connect();
@@ -263,9 +276,6 @@ TEST_CASE("server.client.empty_queue-erase") {
 
 TEST_CASE("server.client.server-side-queue") {
   using namespace server_client_test;
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
 
   server_stop = false;
   std::thread t(server_thread);
@@ -275,7 +285,8 @@ TEST_CASE("server.client.server-side-queue") {
                 server == nullptr);
   }
 
-  auto client = std::make_shared<Client>(service, p);
+  auto client = std::make_shared<Client>(
+      service, AbstractClient::Params("client", "localhost", 4040));
 
   client->connect();
 
@@ -323,10 +334,6 @@ TEST_CASE("server.client.server-side-queue") {
 
 TEST_CASE("server.client.publish-from-pool") {
   using namespace server_client_test;
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
-  p.auto_reconnection = true;
 
   server_stop = false;
   std::thread t(server_thread);
@@ -336,7 +343,8 @@ TEST_CASE("server.client.publish-from-pool") {
                 server == nullptr);
   }
 
-  auto client = std::make_shared<Client>(service, p);
+  auto client = std::make_shared<Client>(
+      service, AbstractClient::Params("client", "localhost", 4040, true));
   client->connect();
   EXPECT_TRUE(client->is_connected());
 
@@ -351,13 +359,14 @@ TEST_CASE("server.client.publish-from-pool") {
   };
   client->addHandler(handler);
 
-  auto client2 = std::make_shared<Client>(service, p);
+  auto client2 = std::make_shared<Client>(
+      service, AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
   client2->publish(qname, {1, 2, 3});
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
-  while (sended != 1 && client2->messagesInPool()!=0) {
+  while (sended != 1 && client2->messagesInPool() != 0) {
     logger_info("server.client.publish-from-pool sended!=1");
   }
 

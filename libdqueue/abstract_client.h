@@ -9,6 +9,12 @@ namespace dqueue {
 class AbstractClient : public std::enable_shared_from_this<AbstractClient> {
 public:
   struct Params {
+    Params(std::string login_, std::string host_, unsigned short port_,
+           bool auto_reconnection_ = true)
+        : login(login_), host(host_), port(port_), auto_reconnection(auto_reconnection_) {
+
+    }
+    std::string login;
     std::string host;
     unsigned short port;
     bool auto_reconnection = true;
@@ -39,4 +45,4 @@ protected:
   bool isStoped = false;
   Params _params;
 };
-}
+} // namespace dqueue

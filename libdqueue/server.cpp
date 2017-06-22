@@ -77,6 +77,13 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
       sendOk(i, cs.messageId);
       break;
     }
+    case (NetworkMessage::message_kind)MessageKinds::LOGIN: {
+      logger_info("server: #", i.get_id(), " set login");
+      queries::Login lg(d);
+      _users->setLogin(i.get_id(), lg.login);
+      sendOk(i, LoginConfirmedID);
+      break;
+    }
     default:
       THROW_EXCEPTION("unknow message kind: ", hdr->kind);
     }

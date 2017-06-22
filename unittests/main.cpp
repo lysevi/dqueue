@@ -27,10 +27,11 @@ public:
     if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
       std::cerr << ss.str();
     } else {
-      if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
+      if (verbose) {
         std::cout << ss.str();
+      } else {
+        _messages.push_back(ss.str());
       }
-      _messages.push_back(ss.str());
     }
   }
 

@@ -143,11 +143,11 @@ void server_thread() {
 
 void testForReconnection(const size_t clients_count) {
   boost::asio::io_service service;
-  AbstractClient::Params p;
-  p.host = "localhost";
-  p.port = 4040;
+  AbstractClient::Params p("empty", "localhost", 4040);
+
   std::vector<std::shared_ptr<testable_client>> clients(clients_count);
   for (size_t i = 0; i < clients_count; i++) {
+    p.login = "client_" + std::to_string(i);
     clients[i] = std::make_shared<testable_client>(&service, p);
     clients[i]->async_connect();
   }

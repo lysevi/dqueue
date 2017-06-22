@@ -30,6 +30,26 @@ struct Ok {
   }
 };
 
+struct Login {
+  std::string login;
+
+  using Scheme = serialisation::Scheme<std::string>;
+
+  Login(const std::string &login_) { login = login_; }
+
+  Login(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), login); }
+
+  NetworkMessage_ptr toNetworkMessage() const {
+    auto neededSize = Scheme::capacity(login);
+
+    auto nd = std::make_shared<NetworkMessage>(
+        neededSize, (NetworkMessage::message_kind)MessageKinds::LOGIN);
+
+    Scheme::write(nd->value(), login);
+    return nd;
+  }
+};
+
 struct CreateQueue {
   std::string name;
 

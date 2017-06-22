@@ -30,10 +30,20 @@ public:
     _users[user.id] = user;
   }
 
+  void setLogin(Id id, const std::string &login) {
+    std::lock_guard<std::shared_mutex> sl(_locker);
+    logger_info("node: set login #", id, " - '", login, "'");
+    _users[id].login = login;
+  }
+
   void erase(Id id) {
     std::lock_guard<std::shared_mutex> sl(_locker);
-    logger_info("node: erase client #", id);
-    _users.erase(id);
+    auto it = _users.find(id);
+    if (it != _users.end()) {
+      logger_info("node: erase client #", id, " login:", it->second.login);
+    } else {
+      THROW_EXCEPTION("node: user #", id, "not exists");
+    }
   }
 
   bool exists(Id id) const {

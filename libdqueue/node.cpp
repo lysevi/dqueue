@@ -14,11 +14,11 @@ struct QueueListener {
 } // namespace
 
 struct Node::Private {
-	Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub) 
-      : _settigns(settigns){
+  Private(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub)
+      : _settigns(settigns) {
     _handler = dh;
     nextQueueId = 0;
-	_clients = ub;
+    _clients = ub;
   }
 
   void createQueue(const QueueSettings &qsettings, const Id ownerId) {
@@ -101,7 +101,7 @@ struct Node::Private {
         return kv.second;
       }
     }
-	THROW_EXCEPTION("queue with id=#", id, " was not founded.");
+    THROW_EXCEPTION("queue with id=#", id, " was not founded.");
   }
 
   Queue queueByName(const std::string &name) const {
@@ -138,7 +138,7 @@ struct Node::Private {
 
     {
       if (!_clients->exists(clientId)) {
-		  THROW_EXCEPTION("node: clientId=#", clientId, " does not exists");
+        THROW_EXCEPTION("node: clientId=#", clientId, " does not exists");
       }
     }
 
@@ -170,7 +170,7 @@ struct Node::Private {
     }
   }
 
-  void publish(const std::string &qname, const rawData &rd) {
+  void publish(const std::string &qname, const rawData &rd, Id author) {
     queueByName(qname);
     std::map<Id, QueueListener> local_cpy;
 
@@ -180,10 +180,12 @@ struct Node::Private {
     }
 
     for (auto clientId : local_cpy) {
-      /* if (clientId.second.isowner && !clientId.second.issubscribed) {
-         continue;
-       }*/
-      _handler(qname, rd, clientId.first);
+      if (clientId.first != author) {
+        /* if (clientId.second.isowner && !clientId.second.issubscribed) {
+           continue;
+         }*/
+        _handler(qname, rd, clientId.first);
+      }
     }
   }
 
@@ -227,6 +229,6 @@ void Node::changeSubscription(Node::SubscribeActions action, const std::string &
   return _impl->changeSubscription(action, queueName, clientId);
 }
 
-void Node::publish(const std::string &qname, const rawData &rd) {
-  return _impl->publish(qname, rd);
+void Node::publish(const std::string &qname, const rawData &rd, Id author) {
+  return _impl->publish(qname, rd, author);
 }

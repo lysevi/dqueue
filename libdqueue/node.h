@@ -39,7 +39,7 @@ public:
   EXPORT void changeSubscription(SubscribeActions action, const std::string &queueName,
 	  Id clientId);
 
-  EXPORT void publish(const std::string &qname, const rawData &rd);
+  EXPORT void publish(const std::string &qname, const rawData &rd, Id author);
 
 protected:
   struct Private;

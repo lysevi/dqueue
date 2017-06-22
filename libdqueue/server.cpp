@@ -73,7 +73,7 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
     case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
       logger("server: #", i.get_id(), " publish");
       auto cs = queries::Publish(d);
-      _node->publish(cs.qname, cs.data);
+      _node->publish(cs.qname, cs.data, i.get_id());
       sendOk(i, cs.messageId);
       break;
     }
@@ -129,7 +129,8 @@ struct Server::Private final : public AbstractServer, public IQueueClient {
   }
 
   virtual void publish(const std::string &qname, const rawData &data) override {
-    _node->publish(qname, data);
+    logger_info("server: publish to ", qname);
+    _node->publish(qname, data, ServerID);
   }
 
   std::mutex _locker;

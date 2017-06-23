@@ -1,6 +1,4 @@
-#include <libdqueue/client.h>
-#include <libdqueue/server.h>
-#include <libdqueue/utils/utils.h>
+#include <libdqueue/dqueue.h>
 #include <cxxopts.hpp>
 #include <iostream>
 #include <unordered_map>
@@ -18,19 +16,14 @@ public:
     std::stringstream ss;
     switch (kind) {
     case dqueue::utils::LOG_MESSAGE_KIND::FATAL:
-      ss << "[err] " << msg << std::endl;
+      std::cerr << "[err] " << msg << std::endl;
       break;
     case dqueue::utils::LOG_MESSAGE_KIND::INFO:
-      ss << "[inf] " << msg << std::endl;
+      std::cout << "[inf] " << msg << std::endl;
       break;
     case dqueue::utils::LOG_MESSAGE_KIND::MESSAGE:
-      ss << "[dbg] " << msg << std::endl;
+      std::cout << "[dbg] " << msg << std::endl;
       break;
-    }
-    if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
-      std::cerr << ss.str();
-    } else {
-      std::cout << ss.str();
     }
   }
 };

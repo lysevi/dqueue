@@ -36,10 +36,17 @@ size_t queue_count = 1;
 
 std::shared_ptr<dqueue::Server> server;
 std::unique_ptr<boost::asio::io_service> server_service;
+std::unique_ptr<boost::asio::io_service> client_service;
 bool server_thread_stop = false;
 void server_thread() {
   while (!server_thread_stop) {
     server_service->run();
+  }
+}
+
+void client_thread() {
+  while (!server_thread_stop) {
+    client_service->run();
   }
 }
 
@@ -107,6 +114,10 @@ int main(int argc, char *argv[]) {
     run_server = false;
   }
   server_service = std::make_unique<boost::asio::io_service>();
+  client_service = std::make_unique<boost::asio::io_service>();
+  std::thread show_thread;
+
+  std::list<std::thread> threads;
 
   dqueue::AbstractServer::params p;
   p.port = 4040;
@@ -121,15 +132,17 @@ int main(int argc, char *argv[]) {
     server->serverStart();
   }
 
-  std::thread show_thread;
-
-  std::list<std::thread> threads;
-  for (size_t i = 0; i < server_threads; ++i) {
-    dqueue::logger("start thread #", i);
-    threads.emplace_back(&server_thread);
+  for (size_t i = 0; i < clients_count; ++i) {
+    dqueue::logger("start client thread #", i);
+    threads.emplace_back(&client_thread);
   }
 
   if (run_server) {
+    for (size_t i = 0; i < server_threads; ++i) {
+      dqueue::logger("start thread #", i);
+      threads.emplace_back(&server_thread);
+    }
+
     for (size_t i = 0; i < queue_count; ++i) {
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
       server->createQueue(qs);
@@ -142,7 +155,7 @@ int main(int argc, char *argv[]) {
   for (size_t i = 0; i < clients_count; ++i) {
     dqueue::AbstractClient::Params client_param("client_" + std::to_string(i),
                                                 "localhost", 4040);
-    auto cl = std::make_shared<BenchmarkClient>(server_service.get(), client_param);
+    auto cl = std::make_shared<BenchmarkClient>(client_service.get(), client_param);
     dqueue::logger_info("client ", i, " start connection");
     cl->async_connect();
     dqueue::logger_info("client ", i, " was connected");

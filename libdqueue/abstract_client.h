@@ -19,7 +19,7 @@ public:
     unsigned short port;
     bool auto_reconnection = true;
   };
-
+  AbstractClient() = delete;
   EXPORT AbstractClient(boost::asio::io_service *service, const Params &_parms);
   EXPORT virtual ~AbstractClient();
   EXPORT void disconnect();

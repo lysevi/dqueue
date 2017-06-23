@@ -53,7 +53,7 @@ void testForReconnection(const size_t clients_count) {
   for (size_t i = 0; i < clients_count; i++) {
     p.login = "client_" + std::to_string(i);
     clients[i] = std::make_shared<Client>(service, p);
-    clients[i]->asyncConnect();
+    clients[i]->connectAsync();
   }
 
   for (auto &c : clients) {
@@ -119,8 +119,8 @@ TEST_CASE("server.client.create_queue") {
       service, AbstractClient::Params("client1", "localhost", 4040));
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));
-  client->asyncConnect();
-  client2->asyncConnect();
+  client->connectAsync();
+  client2->connectAsync();
   while (!client->is_connected() || !client2->is_connected()) {
     logger("server.client.create_queue client not connected");
   }

@@ -67,6 +67,28 @@ void show_info_thread() {
   }
 }
 
+class BenchmarkClient : public dqueue::Client {
+public:
+  BenchmarkClient() = delete;
+  BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)
+      : dqueue::Client(service, _params) {}
+
+  void onConnect() override {
+    dqueue::Client::onConnect();
+    for (size_t j = 0; j < queue_count; ++j) {
+      auto qname = "serverQ_" + std::to_string(j);
+      subscribe(qname);
+	  publish(qname, { 1 });
+    }
+  }
+
+  void onMessage(const std::string &queueName, const dqueue::rawData &d) override {
+    if (messagesInPool() < size_t(5)) {
+      publish(queueName, d);
+    }
+  }
+};
+
 int main(int argc, char *argv[]) {
   auto logger = dqueue::utils::ILogger_ptr{new BenchmarkLogger};
   dqueue::utils::LogManager::start(logger);
@@ -122,29 +144,16 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::unordered_map<dqueue::Id, std::shared_ptr<dqueue::Client>> clients(clients_count);
-
-  dqueue::DataHandler client_handler =
-      [&clients](const std::string &queueName, const dqueue::rawData &d, dqueue::Id id) {
-        auto cl = clients[id];
-        if (cl->messagesInPool() < size_t(5)) {
-          cl->publish(queueName, d);
-        }
-      };
+  std::list<std::shared_ptr<BenchmarkClient>> clients;
 
   for (size_t i = 0; i < clients_count; ++i) {
     dqueue::AbstractClient::Params client_param("client_" + std::to_string(i),
                                                 "localhost", 4040);
-    auto cl = std::make_shared<dqueue::Client>(server_service.get(), client_param);
+    auto cl = std::make_shared<BenchmarkClient>(server_service.get(), client_param);
     dqueue::logger_info("client ", i, " start connection");
-    cl->connect();
+    cl->async_connect();
     dqueue::logger_info("client ", i, " was connected");
-    cl->addHandler(client_handler);
-    for (size_t j = 0; j < queue_count; ++j) {
-      auto qname = "serverQ_" + std::to_string(j);
-      cl->subscribe(qname);
-    }
-    clients[cl->getId()] = cl;
+    clients.push_back(cl);
     dqueue::logger("client #", i, " connected");
   }
 
@@ -152,12 +161,12 @@ int main(int argc, char *argv[]) {
     show_thread = std::move(std::thread{show_info_thread});
   }
 
-  for (auto cl : clients) {
+  /*for (auto cl : clients) {
     for (size_t j = 0; j < queue_count; ++j) {
       auto qname = "serverQ_" + std::to_string(j);
-      cl.second->publish(qname, {1});
+      cl->publish(qname, {1});
     }
-  }
+  }*/
 
   size_t pos = 0;
   for (auto &it : threads) {

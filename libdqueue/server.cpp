@@ -36,9 +36,7 @@ void Server::onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
 
 void Server::onSendToClient(const std::string &queueName, const rawData &rd, Id id) {
   if (id == ServerID) {
-    if (_dh != nullptr) {
-      _dh(queueName, rd, id);
-    }
+    this->callConsumer(queueName, rd, id);
   } else {
     std::lock_guard<std::mutex> lg(_locker);
     // TODO make one allocation in onNewMessage
@@ -123,10 +121,6 @@ std::vector<User> Server::users() const {
 
 void Server::createQueue(const QueueSettings &settings) {
   _node->createQueue(settings, ServerID);
-}
-
-void Server::addHandler(DataHandler dh) {
-  _dh = dh;
 }
 
 void Server::subscribe(const std::string &qname) {

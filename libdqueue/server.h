@@ -9,6 +9,7 @@
 #include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
 
+#include <unordered_map>
 #include <functional>
 #include <mutex>
 #include <string>
@@ -26,8 +27,6 @@ public:
   EXPORT std::vector<User> users() const;
 
   EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) override;
-
-  EXPORT void addHandler(DataHandler handler) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname) override;
   EXPORT void unsubscribe(const std::string &qname) override;
@@ -47,7 +46,6 @@ protected:
   std::mutex _locker;
   uint64_t _nextMessageId = 0;
   std::unique_ptr<Node> _node;
-  DataHandler _dh;
   UserBase_Ptr _users;
 };
 } // namespace dqueue

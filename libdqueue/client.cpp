@@ -48,11 +48,7 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
     logger_info("client (", _params.login, "): recv publish");
     auto cs = queries::Publish(d);
-    if (this->_handler != nullptr) {
-      _handler(cs.qname, cs.data, _id);
-    } else {
-      logger_info("client (", _params.login, "):_handler was not be set");
-    }
+	this->callConsumer(cs.qname, cs.data, _id);
     onMessage(cs.qname, cs.data);
     break;
   }
@@ -96,9 +92,6 @@ Id Client::getId() const {
   return _id;
 }
 
-void Client::addHandler(DataHandler handler) {
-  _handler = handler;
-}
 
 void Client::createQueue(const QueueSettings &settings) {
   logger_info("client (", _params.login, "): createQueue ", settings.name);

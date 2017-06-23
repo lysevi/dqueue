@@ -46,7 +46,7 @@ void testForReconnection(const size_t clients_count) {
   std::thread t(server_thread);
   while (server == nullptr || !server->is_started()) {
     logger("server.client.testForReconnection. !server->is_started serverIsNull? ",
-                server == nullptr);
+           server == nullptr);
   }
 
   std::vector<std::shared_ptr<Client>> clients(clients_count);
@@ -112,7 +112,7 @@ TEST_CASE("server.client.create_queue") {
 
   while (server == nullptr || !server->is_started()) {
     logger("server.client.create_queue !server->is_started serverIsNull? ",
-                server == nullptr);
+           server == nullptr);
   }
 
   auto client = std::make_shared<Client>(
@@ -131,7 +131,7 @@ TEST_CASE("server.client.create_queue") {
       break;
     } else {
       logger("server.client.create_queue erver->getClientDescription is empty ",
-                  server == nullptr);
+             server == nullptr);
     }
   }
 
@@ -176,11 +176,14 @@ TEST_CASE("server.client.create_queue") {
     sended++;
   };
 
-  server->addHandler(server_handler);
+  LambdaEventConsumer serverConsumer(server_handler);
+  LambdaEventConsumer clientConsumer(handler);
+
+  server->addHandler(qname, &serverConsumer);
   server->subscribe(qname);
 
-  client->addHandler(handler);
-  client2->addHandler(handler);
+  client->addHandler(qname, &clientConsumer);
+  client2->addHandler(qname, &clientConsumer);
 
   client->publish(qname, test_data);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
@@ -213,7 +216,7 @@ TEST_CASE("server.client.empty_queue-erase") {
 
   while (server == nullptr || !server->is_started()) {
     logger("server.client.empty_queue-erase !server->is_started serverIsNull? ",
-                server == nullptr);
+           server == nullptr);
   }
 
   auto client = std::make_shared<Client>(
@@ -283,7 +286,7 @@ TEST_CASE("server.client.server-side-queue") {
 
   while (server == nullptr || !server->is_started()) {
     logger("server.client.empty_queue-erase !server->is_started serverIsNull? ",
-                server == nullptr);
+           server == nullptr);
   }
 
   auto client = std::make_shared<Client>(
@@ -341,7 +344,7 @@ TEST_CASE("server.client.publish-from-pool") {
 
   while (server == nullptr || !server->is_started()) {
     logger("server.client.publish-from-pool !server->is_started serverIsNull? ",
-                server == nullptr);
+           server == nullptr);
   }
 
   auto client = std::make_shared<Client>(
@@ -352,15 +355,17 @@ TEST_CASE("server.client.publish-from-pool") {
   auto qname = "server.client.publish-from-pool";
   QueueSettings qsettings1(qname);
   client->createQueue(qsettings1);
+
   std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &ids, &qname](const std::string &queueName, const rawData &d,
-                                          Id id) {
+  DataHandler handler = [&sended, &ids, &qname](const std::string &queueName,
+                                                const rawData &d, Id id) {
     EXPECT_EQ(queueName, qname);
     sended++;
-	ids.insert(id);
+    ids.insert(id);
   };
-  client->addHandler(handler);
+  LambdaEventConsumer clientConsumer(handler);
+  client->addHandler(qname, &clientConsumer);
 
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));
@@ -369,7 +374,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
-  while (sended != 1 && client2->messagesInPool() != 0 && ids.size()>1) {
+  while (sended != 1 && client2->messagesInPool() != 0 && ids.size() > 1) {
     logger("server.client.publish-from-pool sended!=1");
   }
 

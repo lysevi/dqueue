@@ -36,7 +36,6 @@ public:
   
   EXPORT virtual void onMessage(const std::string &queueName, const rawData &d){};
 
-  EXPORT void addHandler(DataHandler handler) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname) override;
   EXPORT void unsubscribe(const std::string &qname) override;
@@ -51,7 +50,6 @@ private:
 protected:
   mutable std::shared_mutex _locker;
   uint64_t _nextMessageId = 0;
-  DataHandler _handler;
   MessagePool_Ptr _messagePool;
   bool _loginConfirmed = false;
   Id _id;

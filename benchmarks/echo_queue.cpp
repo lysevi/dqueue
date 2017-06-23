@@ -78,7 +78,7 @@ public:
     for (size_t j = 0; j < queue_count; ++j) {
       auto qname = "serverQ_" + std::to_string(j);
       subscribe(qname);
-	  publish(qname, { 1 });
+      publish(qname, {1});
     }
   }
 
@@ -121,11 +121,10 @@ int main(int argc, char *argv[]) {
     server->publish(queueName, d);
     sended++;
   };
-
+  dqueue::LambdaEventConsumer serverConsumer(server_handler);
   if (run_server) {
     server = std::make_shared<dqueue::Server>(server_service.get(), p);
     server->serverStart();
-    server->addHandler(server_handler);
   }
 
   std::thread show_thread;
@@ -141,6 +140,7 @@ int main(int argc, char *argv[]) {
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
       server->createQueue(qs);
       server->subscribe(qs.name);
+      server->addHandler(qs.name, &serverConsumer);
     }
   }
 

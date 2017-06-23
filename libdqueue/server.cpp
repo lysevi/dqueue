@@ -123,7 +123,8 @@ void Server::createQueue(const QueueSettings &settings) {
   _node->createQueue(settings, ServerID);
 }
 
-void Server::subscribe(const std::string &qname) {
+void Server::subscribe(const std::string &qname, EventConsumer *handler) {
+  addHandler(qname, handler);
   _node->changeSubscription(Node::SubscribeActions::Subscribe, qname, ServerID);
 }
 

@@ -148,8 +148,18 @@ TEST_CASE("server.client.create_queue") {
     logger("server.client.create_queue server->getDescription is empty");
   }
 
-  client->subscribe(qname);
-  client2->subscribe(qname);
+  auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
+  int sended = 0;
+  DataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
+                                                      const rawData &d, Id) {
+    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
+    EXPECT_EQ(queueName, qname);
+    sended++;
+  };
+
+  LambdaEventConsumer clientConsumer(handler);
+  client->subscribe(qname, &clientConsumer);
+  client2->subscribe(qname, &clientConsumer);
 
   while (true) {
     auto ds = server->getDescription();
@@ -160,30 +170,16 @@ TEST_CASE("server.client.create_queue") {
     logger("server.client.create_queue server->getDescription is empty");
   }
 
-  auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
-  int sended = 0;
-  DataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
-                                                      const rawData &d, Id id) {
-    EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
-    EXPECT_EQ(queueName, qname);
-    sended++;
-  };
-
   DataHandler server_handler = [&test_data, &sended, &qname](const std::string &queueName,
-                                                             const rawData &d, Id id) {
+                                                             const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(queueName, qname);
     sended++;
   };
 
   LambdaEventConsumer serverConsumer(server_handler);
-  LambdaEventConsumer clientConsumer(handler);
 
-  server->addHandler(qname, &serverConsumer);
-  server->subscribe(qname);
-
-  client->addHandler(qname, &clientConsumer);
-  client2->addHandler(qname, &clientConsumer);
+  server->subscribe(qname, &serverConsumer);
 
   client->publish(qname, test_data);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
@@ -243,8 +239,8 @@ TEST_CASE("server.client.empty_queue-erase") {
     logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
-  client->subscribe(qname);
-  client2->subscribe(qname);
+  client->subscribe(qname, nullptr);
+  client2->subscribe(qname, nullptr);
 
   while (true) {
     auto ds = server->getDescription();
@@ -309,7 +305,7 @@ TEST_CASE("server.client.server-side-queue") {
     logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
-  client->subscribe(qname);
+  client->subscribe(qname, nullptr);
 
   while (true) {
     auto ds = server->getDescription();
@@ -359,13 +355,13 @@ TEST_CASE("server.client.publish-from-pool") {
   std::set<Id> ids;
   int sended = 0;
   DataHandler handler = [&sended, &ids, &qname](const std::string &queueName,
-                                                const rawData &d, Id id) {
+                                                const rawData &, Id id) {
     EXPECT_EQ(queueName, qname);
     sended++;
     ids.insert(id);
   };
   LambdaEventConsumer clientConsumer(handler);
-  client->addHandler(qname, &clientConsumer);
+  client->subscribe(qname, &clientConsumer);
 
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));

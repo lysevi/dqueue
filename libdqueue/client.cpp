@@ -48,7 +48,7 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
     logger_info("client (", _params.login, "): recv publish");
     auto cs = queries::Publish(d);
-	this->callConsumer(cs.qname, cs.data, _id);
+    this->callConsumer(cs.qname, cs.data, _id);
     onMessage(cs.qname, cs.data);
     break;
   }
@@ -92,7 +92,6 @@ Id Client::getId() const {
   return _id;
 }
 
-
 void Client::createQueue(const QueueSettings &settings) {
   logger_info("client (", _params.login, "): createQueue ", settings.name);
   queries::CreateQueue cq(settings.name);
@@ -100,9 +99,9 @@ void Client::createQueue(const QueueSettings &settings) {
   send(nd);
 }
 
-void Client::subscribe(const std::string &qname) {
+void Client::subscribe(const std::string &qname, EventConsumer *handler) {
   logger_info("client (", _params.login, "): subscribe ", qname);
-
+  this->addHandler(qname, handler);
   queries::ChangeSubscribe cs(qname);
 
   auto nd = cs.toNetworkMessage();

@@ -18,17 +18,20 @@ using DataHandler =
 
 class EventConsumer {
 public:
-  void setId(int id_) { id = id_; }
+  void setId(int id_) { _consumerId = id_; }
+  int getId() const { return _consumerId; }
+
   virtual void consume(const std::string &queueName, const rawData &d, Id id) = 0;
 
-  int id;
+private:
+  int _consumerId;
 };
 
 class LambdaEventConsumer : public EventConsumer {
 public:
   LambdaEventConsumer(DataHandler dh) { _handler = dh; }
-  void consume(const std::string &queueName, const rawData &d, Id id) override {
-    _handler(queueName, d, id);
+  void consume(const std::string &queueName, const rawData &d, Id id_) override {
+    _handler(queueName, d, id_);
   }
 
 protected:
@@ -38,17 +41,9 @@ protected:
 class IQueueClient {
 public:
   virtual ~IQueueClient() {}
-
-  void addHandler(const std::string &queueName, EventConsumer *handler) {
-    std::lock_guard<std::shared_mutex> lg(_eventHandlers_locker);
-    handler->setId(_consumersId++);
-    _eventHandlers[handler->id] = handler;
-    _queue2handler[queueName].insert(handler->id);
-  }
-
   void rmHandler(EventConsumer *handler) {
     std::lock_guard<std::shared_mutex> lg(_eventHandlers_locker);
-    _eventHandlers.erase(handler->id);
+    _eventHandlers.erase(handler->getId());
   }
 
   void callConsumer(const std::string &queueName, const rawData &d, Id id) {
@@ -62,13 +57,23 @@ public:
   }
 
   virtual void createQueue(const QueueSettings &settings) = 0;
-  virtual void subscribe(const std::string &qname) = 0;
+  virtual void subscribe(const std::string &qname, EventConsumer *handler) = 0;
   virtual void unsubscribe(const std::string &qname) = 0;
   virtual void publish(const std::string &qname, const rawData &data) = 0;
 
+protected:
+  void addHandler(const std::string &queueName, EventConsumer *handler) {
+    if (handler != nullptr) {
+      std::lock_guard<std::shared_mutex> lg(_eventHandlers_locker);
+      handler->setId(_nextConsumersId++);
+      _eventHandlers[handler->getId()] = handler;
+      _queue2handler[queueName].insert(handler->getId());
+    }
+  }
+
 private:
   std::shared_mutex _eventHandlers_locker;
-  int _consumersId = 0;
+  int _nextConsumersId = 0;
   std::unordered_map<int, EventConsumer *> _eventHandlers;
   std::unordered_map<std::string, std::set<int>> _queue2handler;
 };

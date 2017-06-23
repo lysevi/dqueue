@@ -67,7 +67,7 @@ void show_info_thread() {
   }
 }
 
-class BenchmarkClient : public dqueue::Client {
+class BenchmarkClient : public dqueue::Client, public dqueue::EventConsumer {
 public:
   BenchmarkClient() = delete;
   BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -77,12 +77,13 @@ public:
     dqueue::Client::onConnect();
     for (size_t j = 0; j < queue_count; ++j) {
       auto qname = "serverQ_" + std::to_string(j);
-      subscribe(qname);
+      subscribe(qname, this);
       publish(qname, {1});
     }
   }
 
-  void onMessage(const std::string &queueName, const dqueue::rawData &d) override {
+  void consume(const std::string &queueName, const dqueue::rawData &d,
+               dqueue::Id) override {
     if (messagesInPool() < size_t(5)) {
       publish(queueName, d);
     }
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
   dqueue::AbstractServer::params p;
   p.port = 4040;
   dqueue::DataHandler server_handler = [](const std::string &queueName,
-                                          const dqueue::rawData &d, dqueue::Id id) {
+                                          const dqueue::rawData &d, dqueue::Id) {
     server->publish(queueName, d);
     sended++;
   };
@@ -139,8 +140,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < queue_count; ++i) {
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
       server->createQueue(qs);
-      server->subscribe(qs.name);
-      server->addHandler(qs.name, &serverConsumer);
+      server->subscribe(qs.name, &serverConsumer);
     }
   }
 
@@ -160,13 +160,6 @@ int main(int argc, char *argv[]) {
   if (run_server) {
     show_thread = std::move(std::thread{show_info_thread});
   }
-
-  /*for (auto cl : clients) {
-    for (size_t j = 0; j < queue_count; ++j) {
-      auto qname = "serverQ_" + std::to_string(j);
-      cl->publish(qname, {1});
-    }
-  }*/
 
   size_t pos = 0;
   for (auto &it : threads) {

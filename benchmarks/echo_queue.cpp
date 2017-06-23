@@ -13,7 +13,6 @@ public:
     if (!verbose) {
       return;
     }
-    std::stringstream ss;
     switch (kind) {
     case dqueue::utils::LOG_MESSAGE_KIND::FATAL:
       std::cerr << "[err] " << msg << std::endl;

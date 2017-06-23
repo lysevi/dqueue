@@ -1,19 +1,19 @@
 #pragma once
 
 #include <libdqueue/async_io.h>
-#include <libdqueue/users.h>
 #include <libdqueue/exports.h>
+#include <libdqueue/users.h>
 #include <mutex>
 
 namespace dqueue {
+
+enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
 class AbstractServer : public std::enable_shared_from_this<AbstractServer> {
 public:
   struct params {
     unsigned short port;
   };
-
-  enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
   class ClientConnection : public std::enable_shared_from_this<ClientConnection> {
   public:
@@ -29,7 +29,7 @@ public:
     EXPORT Id get_id() const { return id; }
 
   private:
-	  Id id;
+    Id id;
     socket_ptr sock = nullptr;
     std::shared_ptr<AsyncIO> _async_connection = nullptr;
     std::shared_ptr<AbstractServer> _server = nullptr;
@@ -42,7 +42,7 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
-  EXPORT void sendTo(ClientConnection& i, NetworkMessage_ptr &d);
+  EXPORT void sendTo(ClientConnection &i, NetworkMessage_ptr &d);
   EXPORT void sendTo(Id id, NetworkMessage_ptr &d);
 
   virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;

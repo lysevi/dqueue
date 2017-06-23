@@ -30,10 +30,12 @@ public:
 
   EXPORT void onConnect() override;
   EXPORT void onMessageSended(const NetworkMessage_ptr &d) override;
-  EXPORT void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) override;
+
   EXPORT void onNetworkError(const NetworkMessage_ptr &d,
                              const boost::system::error_code &err) override;
+  
   EXPORT virtual void onMessage(const std::string &queueName, const rawData &d){};
+
   EXPORT void addHandler(DataHandler handler) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname) override;
@@ -42,6 +44,7 @@ public:
                       const std::vector<uint8_t> &data) override;
 
 private:
+  EXPORT void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) override;
   void publish_inner(const queries::Publish &pb);
   void send(const NetworkMessage_ptr &nd);
 

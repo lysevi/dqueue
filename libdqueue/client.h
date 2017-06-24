@@ -33,8 +33,9 @@ public:
 
   EXPORT void onNetworkError(const NetworkMessage_ptr &d,
                              const boost::system::error_code &err) override;
-  
-  EXPORT virtual void onMessage(const std::string &/*queueName*/, const rawData &/*d*/){};
+
+  EXPORT virtual void onMessage(const std::string & /*queueName*/,
+                                const rawData & /*d*/){};
 
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname, EventConsumer *handler) override;

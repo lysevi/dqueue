@@ -155,7 +155,7 @@ void testForReconnection(const size_t clients_count) {
   std::thread t(server_thread);
   while (abstract_server == nullptr || !abstract_server->is_started()) {
     logger("testForReconnection. !server->is_started serverIsNull? ",
-                abstract_server == nullptr);
+           abstract_server == nullptr);
     service.poll_one();
   }
 

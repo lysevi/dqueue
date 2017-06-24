@@ -28,16 +28,15 @@ public:
     }
   };
 
-
   EXPORT Node(const Settings &settigns, DataHandler dh, const UserBase_Ptr &ub);
   EXPORT ~Node();
   EXPORT void createQueue(const QueueSettings &qsettings, const Id ownerId);
   EXPORT std::vector<QueueDescription> getQueuesDescription() const;
 
   EXPORT void eraseClient(const Id id);
-  
+
   EXPORT void changeSubscription(SubscribeActions action, const std::string &queueName,
-	  Id clientId);
+                                 Id clientId);
 
   EXPORT void publish(const std::string &qname, const rawData &rd, Id author);
 

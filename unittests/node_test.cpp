@@ -9,8 +9,7 @@ TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
   std::set<Id> sends;
 
-  DataHandler dhandler = [&sends](const std::string &queueName,
-                                        const rawData &, Id id) {
+  DataHandler dhandler = [&sends](const std::string &queueName, const rawData &, Id id) {
     EXPECT_TRUE(!queueName.empty());
     sends.insert(id);
   };
@@ -20,8 +19,8 @@ TEST_CASE("node.queue_subscription") {
   Node n(settings, dhandler, ub);
 
   User cl1{"1", 1};
-  User cl2{ "2", 2};
-  User cl3{ "3", 3};
+  User cl2{"2", 2};
+  User cl3{"3", 3};
   ub->append(cl1);
   ub->append(cl2);
   ub->append(cl3);

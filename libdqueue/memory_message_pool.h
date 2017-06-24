@@ -25,8 +25,8 @@ public:
 
   virtual std::vector<queries::Publish> all() const override {
     std::shared_lock<std::shared_mutex> sl(_locker);
-	std::vector<queries::Publish> result;
-	result.reserve(_pool.size());
+    std::vector<queries::Publish> result;
+    result.reserve(_pool.size());
     for (auto &kv : _pool) {
       result.emplace_back(kv.second);
     }

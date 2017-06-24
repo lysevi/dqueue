@@ -100,8 +100,7 @@ void AsyncIO::readNextAsync() {
             try {
               ptr->_on_recv_hadler(d, cancel_flag);
             } catch (std::exception &ex) {
-              THROW_EXCEPTION("exception on async readData. - ",
-                              ex.what());
+              THROW_EXCEPTION("exception on async readData. - ", ex.what());
             }
 
             if (!cancel_flag) {
@@ -116,9 +115,8 @@ void AsyncIO::readNextAsync() {
       }
     };
 
-    async_read(
-        *spt.get(),
-        buffer((void *)&(ptr->next_message_size), NetworkMessage::SIZE_OF_MESSAGE_SIZE),
-        on_read_size);
+    async_read(*spt.get(), buffer((void *)&(ptr->next_message_size),
+                                  NetworkMessage::SIZE_OF_MESSAGE_SIZE),
+               on_read_size);
   }
 }

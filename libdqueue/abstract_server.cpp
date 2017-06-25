@@ -141,7 +141,6 @@ void AbstractServer::stopServer() {
   }
 }
 
-// TODO ClientConnection - must be shared_ptr
 void AbstractServer::sendTo(ClientConnection &i, NetworkMessage_ptr &d) {
   i.sendData(d);
 }

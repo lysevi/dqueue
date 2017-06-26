@@ -49,17 +49,29 @@ void client_thread() {
   }
 }
 
-static std::atomic_int sended;
+static std::atomic_int server_received;
+static std::atomic_int client_sended;
 bool show_info_stop = false;
 void show_info_thread() {
-  uint64_t lastSended = sended.load();
+  uint64_t lastRecv = server_received.load();
+  uint64_t lastSend = client_sended.load();
   while (true) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    auto curSended = sended.load();
+    auto curRecv = server_received.load();
+    auto curSend = client_sended.load();
 
-    auto diff = curSended - lastSended;
-    std::cout << "speed: " << diff << std::endl;
-    lastSended = curSended;
+    auto diffRecv = curRecv - lastRecv;
+    auto diffSend = curSend - lastSend;
+    if (run_server) {
+      std::cout << "recv speed: " << diffRecv;
+    }
+
+    if (clients_count != 0) {
+      std::cout << " send speed: " << diffSend / clients_count;
+    }
+    std::cout << std::endl;
+    lastRecv = curRecv;
+    lastSend = curSend;
     if (show_info_stop) {
       break;
     }
@@ -85,6 +97,7 @@ public:
                dqueue::Id) override {
     if (messagesInPool() < size_t(5)) {
       publish(queueName, d);
+      client_sended++;
     }
   }
 };
@@ -123,7 +136,7 @@ int main(int argc, char *argv[]) {
   dqueue::DataHandler server_handler = [](const std::string &queueName,
                                           const dqueue::rawData &d, dqueue::Id) {
     server->publish(queueName, d);
-    sended++;
+    server_received++;
   };
   dqueue::LambdaEventConsumer serverConsumer(server_handler);
   if (run_server) {
@@ -162,9 +175,7 @@ int main(int argc, char *argv[]) {
     dqueue::logger("client #", i, " connected");
   }
 
-  if (run_server) {
-    show_thread = std::move(std::thread{show_info_thread});
-  }
+  show_thread = std::move(std::thread{show_info_thread});
 
   size_t pos = 0;
   for (auto &it : threads) {
@@ -173,8 +184,6 @@ int main(int argc, char *argv[]) {
     ++pos;
   }
 
-  if (run_server) {
-    show_info_stop = true;
-    show_thread.join();
-  }
+  show_info_stop = true;
+  show_thread.join();
 }

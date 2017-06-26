@@ -34,6 +34,7 @@ public:
     std::shared_ptr<AsyncIO> _async_connection = nullptr;
     std::shared_ptr<AbstractServer> _server = nullptr;
   };
+  using ClientConnection_Ptr = std::shared_ptr<ClientConnection>;
 
   EXPORT AbstractServer(boost::asio::io_service *service, params p);
   EXPORT virtual ~AbstractServer();
@@ -42,21 +43,21 @@ public:
   EXPORT void start_accept(socket_ptr sock);
   EXPORT bool is_started() const { return _is_started; }
   EXPORT bool is_stoped() const { return _is_stoped; }
-  EXPORT void sendTo(ClientConnection &i, NetworkMessage_ptr &d);
+  EXPORT void sendTo(ClientConnection_Ptr i, NetworkMessage_ptr &d);
   EXPORT void sendTo(Id id, NetworkMessage_ptr &d);
 
-  virtual void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) = 0;
-  virtual void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
+  virtual void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) = 0;
+  virtual void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                               const boost::system::error_code &err) = 0;
-  virtual void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
+  virtual void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                             bool &cancel) = 0;
-  virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) = 0;
-  virtual void onDisconnect(const ClientConnection &i) = 0;
+  virtual ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) = 0;
+  virtual void onDisconnect(const ClientConnection_Ptr &i) = 0;
 
 private:
   static void handle_accept(std::shared_ptr<AbstractServer> self, socket_ptr sock,
                             const boost::system::error_code &err);
-  void erase_client_description(const ClientConnection *client);
+  void erase_client_description(const ClientConnection_Ptr client);
 
 protected:
   boost::asio::io_service *_service = nullptr;
@@ -64,7 +65,7 @@ protected:
   bool _is_started = false;
   std::atomic_int _next_id;
   std::mutex _locker_connections;
-  std::list<std::shared_ptr<ClientConnection>> _connections;
+  std::list<ClientConnection_Ptr> _connections;
   params _params;
   bool _is_stoped = false;
 };

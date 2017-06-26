@@ -22,9 +22,9 @@ Server::~Server() {
   _node->eraseClient(ServerID);
 }
 
-void Server::onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) {}
+void Server::onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) {}
 
-void Server::onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
+void Server::onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                             const boost::system::error_code &err) {
   bool operation_aborted = err == boost::asio::error::operation_aborted;
   bool eof = err == boost::asio::error::eof;
@@ -46,43 +46,43 @@ void Server::onSendToClient(const std::string &queueName, const rawData &rd, Id 
   }
 }
 
-void Server::onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
+void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                           bool &cancel) {
   auto hdr = d->cast_to_header();
 
   switch (hdr->kind) {
   case (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE: {
-    logger_info("server: #", i.get_id(), " create queue");
+    logger_info("server: #", i->get_id(), " create queue");
     queries::CreateQueue cq(d);
     QueueSettings qs(cq.name);
-    _node->createQueue(qs, i.get_id());
+    _node->createQueue(qs, i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE: {
-    logger_info("server: #", i.get_id(), " subscribe");
+    logger_info("server: #", i->get_id(), " subscribe");
     auto cs = queries::ChangeSubscribe(d);
-    _node->changeSubscription(Node::SubscribeActions::Subscribe, cs.qname, i.get_id());
+    _node->changeSubscription(Node::SubscribeActions::Subscribe, cs.qname, i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::UNSUBSCRIBE: {
-    logger_info("server: #", i.get_id(), " unsubscribe");
+    logger_info("server: #", i->get_id(), " unsubscribe");
     auto cs = queries::ChangeSubscribe(d);
-    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, cs.qname, i.get_id());
+    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, cs.qname, i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
-    logger("server: #", i.get_id(), " publish");
+    logger("server: #", i->get_id(), " publish");
     auto cs = queries::Publish(d);
-    _node->publish(cs.qname, cs.data, i.get_id());
+    _node->publish(cs.qname, cs.data, i->get_id());
     sendOk(i, cs.messageId);
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::LOGIN: {
-    logger_info("server: #", i.get_id(), " set login");
+    logger_info("server: #", i->get_id(), " set login");
     queries::Login lg(d);
-    _users->setLogin(i.get_id(), lg.login);
+    _users->setLogin(i->get_id(), lg.login);
 
-    queries::LoginConfirm lc(i.get_id());
+    queries::LoginConfirm lc(i->get_id());
     auto nd = lc.toNetworkMessage();
     sendTo(i, nd);
     break;
@@ -92,23 +92,23 @@ void Server::onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d,
   }
 }
 
-void Server::sendOk(ClientConnection &i, uint64_t messageId) {
+void Server::sendOk(ClientConnection_Ptr i, uint64_t messageId) {
   auto nd = queries::Ok(messageId).toNetworkMessage();
   this->sendTo(i, nd);
 }
 
-ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection &i) {
+ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection_Ptr i) {
   // TODO logic must be implemented in call code
   User cl;
-  cl.id = i.get_id();
+  cl.id = i->get_id();
   cl.login = "not set";
   _users->append(cl);
   return ON_NEW_CONNECTION_RESULT::ACCEPT;
 }
 
-void Server::onDisconnect(const AbstractServer::ClientConnection &i) {
-  _users->erase(i.get_id());
-  _node->eraseClient(i.get_id());
+void Server::onDisconnect(const AbstractServer::ClientConnection_Ptr &i) {
+  _users->erase(i->get_id());
+  _node->eraseClient(i->get_id());
 }
 
 std::vector<Node::QueueDescription> Server::getDescription() const {

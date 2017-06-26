@@ -26,21 +26,21 @@ public:
   EXPORT std::vector<Node::QueueDescription> getDescription() const;
   EXPORT std::vector<User> users() const;
 
-  EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &i) override;
+  EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname, EventConsumer *handler) override;
   EXPORT void unsubscribe(const std::string &qname) override;
   EXPORT void publish(const std::string &qname, const rawData &data) override;
 
 private:
-  void onMessageSended(ClientConnection &i, const NetworkMessage_ptr &d) override;
-  void onNetworkError(ClientConnection &i, const NetworkMessage_ptr &d,
+  void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;
+  void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                       const boost::system::error_code &err) override;
   void onSendToClient(const std::string &queueName, const rawData &rd, Id id);
-  void onNewMessage(ClientConnection &i, const NetworkMessage_ptr &d, bool &cancel);
+  void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d, bool &cancel);
 
-  void sendOk(ClientConnection &i, uint64_t messageId);
-  void onDisconnect(const AbstractServer::ClientConnection &i) override;
+  void sendOk(ClientConnection_Ptr i, uint64_t messageId);
+  void onDisconnect(const AbstractServer::ClientConnection_Ptr &i) override;
 
 protected:
   std::mutex _locker;

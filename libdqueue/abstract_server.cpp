@@ -39,21 +39,21 @@ void AbstractServer::ClientConnection::close() {
     _async_connection->full_stop();
     _async_connection = nullptr;
 
-    this->_server->erase_client_description(this);
+    this->_server->erase_client_description(this->shared_from_this());
   }
 }
 
 void AbstractServer::ClientConnection::onMessageSended(const NetworkMessage_ptr &d) {
-  this->_server->onMessageSended(*this, d);
+  this->_server->onMessageSended(this->shared_from_this(), d);
 }
 void AbstractServer::ClientConnection::onNetworkError(
     const NetworkMessage_ptr &d, const boost::system::error_code &err) {
-  this->_server->onNetworkError(*this, d, err);
+  this->_server->onNetworkError(this->shared_from_this(), d, err);
 }
 
 void AbstractServer::ClientConnection::onDataRecv(const NetworkMessage_ptr &d,
                                                   bool &cancel) {
-  _server->onNewMessage(*this, d, cancel);
+  _server->onNewMessage(this->shared_from_this(), d, cancel);
 }
 
 void AbstractServer::ClientConnection::sendData(const NetworkMessage_ptr &d) {
@@ -84,12 +84,12 @@ void AbstractServer::start_accept(socket_ptr sock) {
                      std::bind(&handle_accept, this->shared_from_this(), sock, _1));
 }
 
-void AbstractServer::erase_client_description(const ClientConnection *client) {
+void AbstractServer::erase_client_description(const ClientConnection_Ptr client) {
   std::lock_guard<std::mutex> lg(_locker_connections);
   auto it = std::find_if(_connections.begin(), _connections.end(),
                          [client](auto c) { return c->get_id() == client->get_id(); });
   ENSURE(it != _connections.end());
-  onDisconnect(*client);
+  onDisconnect(client->shared_from_this());
   _connections.erase(it);
 }
 
@@ -114,7 +114,7 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
       self->_next_id++;
     }
 
-    if (self->onNewConnection(*new_client.get()) == ON_NEW_CONNECTION_RESULT::ACCEPT) {
+    if (self->onNewConnection(new_client) == ON_NEW_CONNECTION_RESULT::ACCEPT) {
       std::lock_guard<std::mutex> lg(self->_locker_connections);
       new_client->start();
       self->_connections.push_back(new_client);
@@ -141,15 +141,15 @@ void AbstractServer::stopServer() {
   }
 }
 
-void AbstractServer::sendTo(ClientConnection &i, NetworkMessage_ptr &d) {
-  i.sendData(d);
+void AbstractServer::sendTo(ClientConnection_Ptr i, NetworkMessage_ptr &d) {
+  i->sendData(d);
 }
 
 void AbstractServer::sendTo(Id id, NetworkMessage_ptr &d) {
   std::lock_guard<std::mutex> lg(this->_locker_connections);
   for (auto c : _connections) {
     if (c->get_id() == id) {
-      sendTo(*c, d);
+      sendTo(c, d);
       return;
     }
   }

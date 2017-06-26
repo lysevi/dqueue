@@ -82,26 +82,26 @@ struct testable_server : public AbstractServer {
 
   virtual ~testable_server() { logger("stop testable server"); }
   bool success = false;
-  void onMessageSended(AbstractServer::ClientConnection &,
+  void onMessageSended(AbstractServer::ClientConnection_Ptr,
                        const NetworkMessage_ptr &) override {
     success = true;
   }
 
-  void onNewMessage(AbstractServer::ClientConnection &ClientConnection,
-                    const NetworkMessage_ptr &d, bool &) {
+  void onNewMessage(AbstractServer::ClientConnection_Ptr ClientConnection,
+                    const NetworkMessage_ptr &d, bool &)override {
     auto qh = d->cast_to_header();
 
     int kind = (NetworkMessage::message_kind)qh->kind;
     switch (kind) {
     case 1: {
       std::lock_guard<std::mutex> lg(_locker);
-      auto fres = id2count.find(ClientConnection.get_id());
+      auto fres = id2count.find(ClientConnection->get_id());
       if (fres == id2count.end()) {
-        id2count[ClientConnection.get_id()] = size_t();
+        id2count[ClientConnection->get_id()] = size_t();
       } else {
         fres->second += 1;
       }
-      ClientConnection.sendData(d);
+      ClientConnection->sendData(d);
       break;
     }
     default:
@@ -110,17 +110,17 @@ struct testable_server : public AbstractServer {
     }
   }
 
-  void onNetworkError(ClientConnection &, const NetworkMessage_ptr &,
+  void onNetworkError(ClientConnection_Ptr, const NetworkMessage_ptr &,
                       const boost::system::error_code &) override {}
 
   std::set<Id> connections;
 
-  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection &c) override {
-    connections.insert(c.get_id());
+  ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr c) override {
+    connections.insert(c->get_id());
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 
-  void onDisconnect(const ClientConnection &i) override { connections.erase(i.get_id()); }
+  void onDisconnect(const ClientConnection_Ptr &i) override { connections.erase(i->get_id()); }
 };
 
 bool server_stop = false;

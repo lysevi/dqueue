@@ -61,17 +61,17 @@ public:
   }
 
   virtual void createQueue(const QueueSettings &settings) = 0;
-  virtual void subscribe(const std::string &qname, EventConsumer *handler) = 0;
+  virtual void subscribe(const SubscriptionParams&settings, EventConsumer *handler) = 0;
   virtual void unsubscribe(const std::string &qname) = 0;
   virtual void publish(const PublishParams &settings, const rawData &data) = 0;
 
 protected:
-  void addHandler(const std::string &queueName, EventConsumer *handler) {
+  void addHandler(const SubscriptionParams&settings, EventConsumer *handler) {
     if (handler != nullptr) {
       std::lock_guard<std::shared_mutex> lg(_eventHandlers_locker);
       handler->setId(_nextConsumersId++);
       _eventHandlers[handler->getId()] = handler;
-      _queue2handler[queueName].insert(handler->getId());
+      _queue2handler[settings.queueName].insert(handler->getId());
     }
   }
 

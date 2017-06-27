@@ -34,7 +34,7 @@ public:
 
   EXPORT void eraseClient(const Id id);
 
-  EXPORT void changeSubscription(const SubscriptionSettings &settings, Id clientId);
+  EXPORT void changeSubscription(SubscribeActions action, const SubscriptionParams &settings, Id clientId);
 
   EXPORT void publish(const PublishParams &settings, const rawData &rd, Id author);
 

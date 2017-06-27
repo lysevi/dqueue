@@ -31,12 +31,12 @@ TEST_CASE("node.queue_subscription") {
   auto descr = n.getQueuesDescription();
   EXPECT_EQ(descr.size(), size_t(3));
 
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Subscribe, "q1"), 1);
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Subscribe, "q2"), 1);
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Subscribe, "q3"), 1);
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Subscribe, "q3"), 2);
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Subscribe, "q3"), 3);
-  n.changeSubscription(SubscriptionSettings(SubscribeActions::Unsubscribe, "q3"), 1);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q1"), 1);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q2"), 1);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 1);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 2);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 3);
+  n.changeSubscription(SubscribeActions::Unsubscribe, SubscriptionParams("q3"), 1);
 
   descr = n.getQueuesDescription();
   for (auto d : descr) {

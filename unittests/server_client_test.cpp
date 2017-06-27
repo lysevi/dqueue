@@ -158,8 +158,8 @@ TEST_CASE("server.client.create_queue") {
   };
 
   LambdaEventConsumer clientConsumer(handler);
-  client->subscribe(qname, &clientConsumer);
-  client2->subscribe(qname, &clientConsumer);
+  client->subscribe(SubscriptionParams(qname), &clientConsumer);
+  client2->subscribe(SubscriptionParams(qname), &clientConsumer);
 
   while (true) {
     auto ds = server->getDescription();
@@ -179,7 +179,7 @@ TEST_CASE("server.client.create_queue") {
 
   LambdaEventConsumer serverConsumer(server_handler);
 
-  server->subscribe(qname, &serverConsumer);
+  server->subscribe(SubscriptionParams(qname), &serverConsumer);
 
   client->publish(PublishParams(qname), test_data);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
@@ -239,8 +239,8 @@ TEST_CASE("server.client.empty_queue-erase") {
     logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
-  client->subscribe(qname, nullptr);
-  client2->subscribe(qname, nullptr);
+  client->subscribe(SubscriptionParams(qname), nullptr);
+  client2->subscribe(SubscriptionParams(qname), nullptr);
 
   while (true) {
     auto ds = server->getDescription();
@@ -305,7 +305,7 @@ TEST_CASE("server.client.server-side-queue") {
     logger("server.client.empty_queue-erase server->getDescription is empty");
   }
 
-  client->subscribe(qname, nullptr);
+  client->subscribe(SubscriptionParams(qname), nullptr);
 
   while (true) {
     auto ds = server->getDescription();
@@ -361,7 +361,7 @@ TEST_CASE("server.client.publish-from-pool") {
     ids.insert(id);
   };
   LambdaEventConsumer clientConsumer(handler);
-  client->subscribe(qname, &clientConsumer);
+  client->subscribe(SubscriptionParams(qname), &clientConsumer);
 
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));

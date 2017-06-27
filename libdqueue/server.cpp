@@ -62,26 +62,21 @@ void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   case (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE: {
     logger_info("server: #", i->get_id(), " subscribe");
     auto cs = queries::ChangeSubscribe(d);
-    SubscriptionSettings ss;
-    ss.queueName = cs.qname;
-    ss.action = SubscribeActions::Subscribe;
-    _node->changeSubscription(ss, i->get_id());
+    _node->changeSubscription(SubscribeActions::Subscribe, cs.toParams(), i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::UNSUBSCRIBE: {
     logger_info("server: #", i->get_id(), " unsubscribe");
     auto cs = queries::ChangeSubscribe(d);
-    SubscriptionSettings ss;
-    ss.queueName = cs.qname;
-    ss.action = SubscribeActions::Unsubscribe;
-    _node->changeSubscription(ss, i->get_id());
+    _node->changeSubscription(SubscribeActions::Unsubscribe, cs.toParams(),
+                              i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
     logger("server: #", i->get_id(), " publish");
     auto cs = queries::Publish(d);
-    PublishParams settings = cs.toPublishParams();
-    _node->publish(settings, cs.data, i->get_id());
+    PublishParams param = cs.toPublishParams();
+    _node->publish(param, cs.data, i->get_id());
     sendOk(i, cs.messageId);
     break;
   }
@@ -131,19 +126,14 @@ void Server::createQueue(const QueueSettings &settings) {
   _node->createQueue(settings, ServerID);
 }
 
-void Server::subscribe(const std::string &qname, EventConsumer *handler) {
-  addHandler(qname, handler);
-  SubscriptionSettings ss;
-  ss.queueName = qname;
-  ss.action = SubscribeActions::Subscribe;
-  _node->changeSubscription(ss, ServerID);
+void Server::subscribe(const SubscriptionParams &settings, EventConsumer *handler) {
+  addHandler(settings, handler);
+  _node->changeSubscription(SubscribeActions::Subscribe, settings, ServerID);
 }
 
 void Server::unsubscribe(const std::string &qname) {
-  SubscriptionSettings ss;
-  ss.queueName = qname;
-  ss.action = SubscribeActions::Subscribe;
-  _node->changeSubscription(ss, ServerID);
+  SubscriptionParams ss(qname);
+  _node->changeSubscription(SubscribeActions::Subscribe, ss, ServerID);
 }
 
 void Server::publish(const PublishParams &settings, const rawData &data) {

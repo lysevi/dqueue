@@ -99,11 +99,10 @@ void Client::createQueue(const QueueSettings &settings) {
   send(nd);
 }
 
-void Client::subscribe(const std::string &qname, EventConsumer *handler) {
-  logger_info("client (", _params.login, "): subscribe ", qname);
-  this->addHandler(qname, handler);
-  queries::ChangeSubscribe cs(qname);
-
+void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler) {
+  logger_info("client (", _params.login, "): subscribe ", settings.queueName);
+  this->addHandler(settings, handler);
+  queries::ChangeSubscribe cs(settings);
   auto nd = cs.toNetworkMessage();
   nd->cast_to_header()->kind =
       static_cast<NetworkMessage::message_kind>(MessageKinds::SUBSCRIBE);
@@ -113,7 +112,8 @@ void Client::subscribe(const std::string &qname, EventConsumer *handler) {
 
 void Client::unsubscribe(const std::string &qname) {
   logger_info("client (", _params.login, "): unsubscribe ", qname);
-  queries::ChangeSubscribe cs(qname);
+  SubscriptionParams settings{qname};
+  queries::ChangeSubscribe cs(settings);
 
   auto nd = cs.toNetworkMessage();
   nd->cast_to_header()->kind =
@@ -122,7 +122,7 @@ void Client::unsubscribe(const std::string &qname) {
   send(nd);
 }
 
-void Client::publish(const PublishParams& settings, const std::vector<uint8_t> &data) {
+void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data) {
   std::lock_guard<std::shared_mutex> lg(_locker);
   queries::Publish pb(settings, data, _nextMessageId++);
   _messagePool->append(pb);

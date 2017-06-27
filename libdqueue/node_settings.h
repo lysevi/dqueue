@@ -3,12 +3,11 @@
 
 namespace dqueue {
 enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
-struct SubscriptionSettings {
-  SubscribeActions action;
+struct SubscriptionParams {
   std::string queueName;
-  SubscriptionSettings() = default;
-  SubscriptionSettings(SubscribeActions a, const std::string &queueName_)
-      : action(a), queueName(queueName_) {}
+  SubscriptionParams() = default;
+  SubscriptionParams(const std::string &queueName_)
+      : queueName(queueName_) {}
 };
 
 struct PublishParams {

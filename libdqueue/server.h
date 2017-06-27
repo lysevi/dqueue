@@ -29,7 +29,7 @@ public:
 
   EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) override;
   EXPORT void createQueue(const QueueSettings &settings) override;
-  EXPORT void subscribe(const std::string &qname, EventConsumer *handler) override;
+  EXPORT void subscribe(const SubscriptionParams&settings, EventConsumer *handler) override;
   EXPORT void unsubscribe(const std::string &qname) override;
   EXPORT void publish(const PublishParams& settings, const rawData &data) override;
 

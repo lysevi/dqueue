@@ -97,7 +97,7 @@ struct ChangeSubscribe {
 
   using Scheme = serialisation::Scheme<std::string>;
 
-  ChangeSubscribe(const std::string &queue) { qname = queue; }
+  ChangeSubscribe(const SubscriptionParams &settings) { qname = settings.queueName; }
 
   ChangeSubscribe(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), qname); }
 
@@ -110,6 +110,8 @@ struct ChangeSubscribe {
     Scheme::write(nd->value(), qname);
     return nd;
   }
+
+  SubscriptionParams toParams() const { return SubscriptionParams(qname); }
 };
 
 struct Publish {

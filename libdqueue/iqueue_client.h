@@ -4,6 +4,7 @@
 #include <libdqueue/q.h>
 #include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
+#include <libdqueue/node_settings.h>
 #include <functional>
 #include <set>
 #include <shared_mutex>
@@ -62,7 +63,7 @@ public:
   virtual void createQueue(const QueueSettings &settings) = 0;
   virtual void subscribe(const std::string &qname, EventConsumer *handler) = 0;
   virtual void unsubscribe(const std::string &qname) = 0;
-  virtual void publish(const std::string &qname, const rawData &data) = 0;
+  virtual void publish(const PublishParams &settings, const rawData &data) = 0;
 
 protected:
   void addHandler(const std::string &queueName, EventConsumer *handler) {

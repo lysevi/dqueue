@@ -172,13 +172,13 @@ struct Node::Private {
     }
   }
 
-  void publish(const std::string &qname, const rawData &rd, Id author) {
-    queueByName(qname);
+  void publish(const PublishParams &settings, const rawData &rd, Id author) {
+    queueByName(settings.queueName);
     std::map<Id, QueueListener> local_cpy;
 
     {
       std::shared_lock<std::shared_mutex> sl(_subscriptions_locker);
-      local_cpy = _subscriptions[qname];
+      local_cpy = _subscriptions[settings.queueName];
     }
 
     for (auto clientId : local_cpy) {
@@ -187,7 +187,7 @@ struct Node::Private {
            continue;
          }*/
 		  MessageInfo info;
-		  info.queueName = qname;
+		  info.queueName = settings.queueName;
         _handler(info, rd, clientId.first);
       }
     }
@@ -232,6 +232,6 @@ void Node::changeSubscription(const SubscriptionSettings&settings, Id clientId) 
   return _impl->changeSubscription(settings, clientId);
 }
 
-void Node::publish(const std::string &qname, const rawData &rd, Id author) {
-  return _impl->publish(qname, rd, author);
+void Node::publish(const PublishParams &settings, const rawData &rd, Id author) {
+  return _impl->publish(settings, rd, author);
 }

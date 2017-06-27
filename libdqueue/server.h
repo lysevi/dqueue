@@ -8,6 +8,7 @@
 #include <libdqueue/queries.h>
 #include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
+#include <libdqueue/node_settings.h>
 
 #include <functional>
 #include <mutex>
@@ -30,7 +31,7 @@ public:
   EXPORT void createQueue(const QueueSettings &settings) override;
   EXPORT void subscribe(const std::string &qname, EventConsumer *handler) override;
   EXPORT void unsubscribe(const std::string &qname) override;
-  EXPORT void publish(const std::string &qname, const rawData &data) override;
+  EXPORT void publish(const PublishParams& settings, const rawData &data) override;
 
 private:
   void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;

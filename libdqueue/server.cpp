@@ -1,7 +1,7 @@
 #include <libdqueue/node.h>
+#include <libdqueue/node_settings.h>
 #include <libdqueue/queries.h>
 #include <libdqueue/server.h>
-#include <libdqueue/subscription_settings.h>
 #include <libdqueue/users.h>
 
 #include <functional>
@@ -80,7 +80,8 @@ void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
     logger("server: #", i->get_id(), " publish");
     auto cs = queries::Publish(d);
-    _node->publish(cs.qname, cs.data, i->get_id());
+    PublishParams settings = cs.toPublishParams();
+    _node->publish(settings, cs.data, i->get_id());
     sendOk(i, cs.messageId);
     break;
   }
@@ -145,7 +146,7 @@ void Server::unsubscribe(const std::string &qname) {
   _node->changeSubscription(ss, ServerID);
 }
 
-void Server::publish(const std::string &qname, const rawData &data) {
-  logger_info("server: publish to ", qname);
-  _node->publish(qname, data, ServerID);
+void Server::publish(const PublishParams &settings, const rawData &data) {
+  logger_info("server: publish to ", settings.queueName);
+  _node->publish(settings, data, ServerID);
 }

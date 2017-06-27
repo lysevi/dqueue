@@ -93,7 +93,7 @@ public:
     }
   }
 
-  void consume(const dqueue::MessageInfo&info, const dqueue::rawData &d,
+  void consume(const dqueue::MessageInfo &info, const dqueue::rawData &d,
                dqueue::Id) override {
     if (messagesInPool() < size_t(5)) {
       publish(info.queueName, d);
@@ -133,9 +133,9 @@ int main(int argc, char *argv[]) {
 
   dqueue::AbstractServer::params p;
   p.port = 4040;
-  dqueue::DataHandler server_handler = [](const dqueue::MessageInfo&info,
+  dqueue::DataHandler server_handler = [](const dqueue::MessageInfo &info,
                                           const dqueue::rawData &d, dqueue::Id) {
-    server->publish(info.queueName, d);
+    server->publish(dqueue::PublishParams(info.queueName), d);
     server_received++;
   };
   dqueue::LambdaEventConsumer serverConsumer(server_handler);

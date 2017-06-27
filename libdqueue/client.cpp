@@ -122,9 +122,9 @@ void Client::unsubscribe(const std::string &qname) {
   send(nd);
 }
 
-void Client::publish(const std::string &qname, const std::vector<uint8_t> &data) {
+void Client::publish(const PublishParams& settings, const std::vector<uint8_t> &data) {
   std::lock_guard<std::shared_mutex> lg(_locker);
-  queries::Publish pb(qname, data, _nextMessageId++);
+  queries::Publish pb(settings, data, _nextMessageId++);
   _messagePool->append(pb);
 
   publish_inner(pb);

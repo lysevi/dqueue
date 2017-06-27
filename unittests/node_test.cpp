@@ -51,13 +51,13 @@ TEST_CASE("node.queue_subscription") {
     }
   }
 
-  n.publish("q1", rawData(1), 2);
+  n.publish(PublishParams("q1"), rawData(1), 2);
   EXPECT_EQ(sends.size(), size_t(1));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
 
   sends.clear();
 
-  n.publish("q3", rawData(3), 1);
+  n.publish(PublishParams("q3"), rawData(3), 1);
   EXPECT_EQ(sends.size(), size_t(2));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) == sends.end());
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 2) != sends.end());

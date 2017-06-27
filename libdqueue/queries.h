@@ -3,6 +3,7 @@
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/kinds.h>
 #include <libdqueue/network_message.h>
+#include <libdqueue/node_settings.h>
 #include <libdqueue/serialisation.h>
 #include <libdqueue/utils/utils.h>
 #include <cstdint>
@@ -118,9 +119,16 @@ struct Publish {
 
   using Scheme = serialisation::Scheme<std::string, std::vector<uint8_t>, uint64_t>;
 
-  Publish(const std::string &queue, const std::vector<uint8_t> &data_,
+  Publish(const PublishParams &settings, const std::vector<uint8_t> &data_,
           uint64_t messageId_) {
-    qname = queue;
+    qname = settings.queueName;
+    data = data_;
+    messageId = messageId_;
+  }
+
+  Publish(const std::string &qName, const std::vector<uint8_t> &data_,
+          uint64_t messageId_) {
+    qname = qName;
     data = data_;
     messageId = messageId_;
   }
@@ -141,6 +149,12 @@ struct Publish {
 
   MessageInfo toInfo() const {
     MessageInfo result;
+    result.queueName = qname;
+    return result;
+  }
+
+  PublishParams toPublishParams() {
+    PublishParams result;
     result.queueName = qname;
     return result;
   }

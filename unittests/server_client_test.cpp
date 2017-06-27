@@ -150,7 +150,7 @@ TEST_CASE("server.client.create_queue") {
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
-  DataHandler handler = [&test_data, &sended, &qname](const MessageInfo&info,
+  DataHandler handler = [&test_data, &sended, &qname](const MessageInfo &info,
                                                       const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
@@ -170,7 +170,7 @@ TEST_CASE("server.client.create_queue") {
     logger("server.client.create_queue server->getDescription is empty");
   }
 
-  DataHandler server_handler = [&test_data, &sended, &qname](const MessageInfo&info,
+  DataHandler server_handler = [&test_data, &sended, &qname](const MessageInfo &info,
                                                              const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
@@ -181,7 +181,7 @@ TEST_CASE("server.client.create_queue") {
 
   server->subscribe(qname, &serverConsumer);
 
-  client->publish(qname, test_data);
+  client->publish(PublishParams(qname), test_data);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
     logger("server.client.create_queue !sended");
   }
@@ -354,8 +354,8 @@ TEST_CASE("server.client.publish-from-pool") {
 
   std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &ids, &qname](const MessageInfo&info,
-                                                const rawData &, Id id) {
+  DataHandler handler = [&sended, &ids, &qname](const MessageInfo &info, const rawData &,
+                                                Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;
     ids.insert(id);
@@ -366,7 +366,7 @@ TEST_CASE("server.client.publish-from-pool") {
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
-  client2->publish(qname, {1, 2, 3});
+  client2->publish(PublishParams(qname), {1, 2, 3});
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 

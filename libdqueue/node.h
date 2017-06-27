@@ -3,7 +3,7 @@
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/q.h>
-#include <libdqueue/subscription_settings.h>
+#include <libdqueue/node_settings.h>
 #include <libdqueue/users.h>
 
 namespace dqueue {
@@ -36,7 +36,7 @@ public:
 
   EXPORT void changeSubscription(const SubscriptionSettings &settings, Id clientId);
 
-  EXPORT void publish(const std::string &qname, const rawData &rd, Id author);
+  EXPORT void publish(const PublishParams &settings, const rawData &rd, Id author);
 
 protected:
   struct Private;

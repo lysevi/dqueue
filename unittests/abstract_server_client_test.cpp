@@ -88,7 +88,7 @@ struct testable_server : public AbstractServer {
   }
 
   void onNewMessage(AbstractServer::ClientConnection_Ptr ClientConnection,
-                    const NetworkMessage_ptr &d, bool &)override {
+                    const NetworkMessage_ptr &d, bool &) override {
     auto qh = d->cast_to_header();
 
     int kind = (NetworkMessage::message_kind)qh->kind;
@@ -120,7 +120,9 @@ struct testable_server : public AbstractServer {
     return ON_NEW_CONNECTION_RESULT::ACCEPT;
   }
 
-  void onDisconnect(const ClientConnection_Ptr &i) override { connections.erase(i->get_id()); }
+  void onDisconnect(const ClientConnection_Ptr &i) override {
+    connections.erase(i->get_id());
+  }
 };
 
 bool server_stop = false;
@@ -213,7 +215,10 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
-  EXPECT_TRUE(abstract_server->connections.empty());
+  while (!abstract_server->connections.empty()) {
+    logger("testForReconnection. !abstract_server->connections.empty()");
+    service.poll_one();
+  }
 
   // stop server
   server_stop = true;

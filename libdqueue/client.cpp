@@ -48,7 +48,7 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
     logger_info("client (", _params.login, "): recv publish");
     auto cs = queries::Publish(d);
-    this->callConsumer(cs.toInfo(), cs.data, _id);
+    this->callConsumer(cs.toPublishParams(), cs.data, _id);
     onMessage(cs.qname, cs.data);
     break;
   }

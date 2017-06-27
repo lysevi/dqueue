@@ -7,10 +7,14 @@ using namespace dqueue::utils;
 
 TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
+  std::string tag = "tag1";
   std::set<Id> sends;
 
-  DataHandler dhandler = [&sends](const MessageInfo&info, const rawData &, Id id) {
+  DataHandler dhandler = [&sends, tag](const PublishParams &info, const rawData &, Id id) {
     EXPECT_TRUE(!info.queueName.empty());
+    if (info.queueName == "q2" && id == 1) {
+      EXPECT_EQ(info.tag, tag);
+    }
     sends.insert(id);
   };
 
@@ -32,9 +36,12 @@ TEST_CASE("node.queue_subscription") {
   EXPECT_EQ(descr.size(), size_t(3));
 
   n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q1"), 1);
-  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q2"), 1);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q2", tag), 1);
   n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 1);
+
   n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 2);
+  n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q2", "tag2"), 2);
+
   n.changeSubscription(SubscribeActions::Subscribe, SubscriptionParams("q3"), 3);
   n.changeSubscription(SubscribeActions::Unsubscribe, SubscriptionParams("q3"), 1);
 
@@ -44,14 +51,20 @@ TEST_CASE("node.queue_subscription") {
       EXPECT_EQ(d.subscribers.size(), size_t(1));
     }
     if (d.settings.name == "q2") {
-      EXPECT_EQ(d.subscribers.size(), size_t(1));
+      EXPECT_EQ(d.subscribers.size(), size_t(2));
     }
     if (d.settings.name == "q3") {
       EXPECT_EQ(d.subscribers.size(), size_t(2));
     }
   }
 
-  n.publish(PublishParams("q1"), rawData(1), 2);
+  n.publish(PublishParams("q1", tag), rawData(1), 2); //author must be not in result
+  EXPECT_EQ(sends.size(), size_t(1));
+  EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
+
+  sends.clear();
+
+  n.publish(PublishParams("q2", tag), rawData(1), 3);
   EXPECT_EQ(sends.size(), size_t(1));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
 

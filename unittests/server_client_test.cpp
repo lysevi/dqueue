@@ -150,7 +150,7 @@ TEST_CASE("server.client.create_queue") {
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
-  DataHandler handler = [&test_data, &sended, &qname](const MessageInfo &info,
+  DataHandler handler = [&test_data, &sended, &qname](const PublishParams &info,
                                                       const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
@@ -170,7 +170,7 @@ TEST_CASE("server.client.create_queue") {
     logger("server.client.create_queue server->getDescription is empty");
   }
 
-  DataHandler server_handler = [&test_data, &sended, &qname](const MessageInfo &info,
+  DataHandler server_handler = [&test_data, &sended, &qname](const PublishParams &info,
                                                              const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
@@ -354,8 +354,8 @@ TEST_CASE("server.client.publish-from-pool") {
 
   std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &ids, &qname](const MessageInfo &info, const rawData &,
-                                                Id id) {
+  DataHandler handler = [&sended, &ids, &qname](const PublishParams &info,
+                                                const rawData &, Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;
     ids.insert(id);
@@ -370,8 +370,64 @@ TEST_CASE("server.client.publish-from-pool") {
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
-  while (sended != 1 && client2->messagesInPool() != 0 && ids.size() > 1) {
+  while (sended != 1 || client2->messagesInPool() != 0 || ids.size() > 1) {
     logger("server.client.publish-from-pool sended!=1");
+  }
+
+  server_stop = true;
+  while (server != nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  t.join();
+}
+
+TEST_CASE("server.client.publish-tag-filtration") {
+  using namespace server_client_test;
+
+  server_stop = false;
+  std::thread t(server_thread);
+
+  while (server == nullptr || !server->is_started()) {
+    logger("server.client.publish-tag-filtration !server->is_started serverIsNull? ",
+           server == nullptr);
+  }
+
+  auto client1 = std::make_shared<Client>(
+      service, AbstractClient::Params("client", "localhost", 4040, true));
+  client1->connect();
+  EXPECT_TRUE(client1->is_connected());
+
+  auto qname = "server.client.publish-tag-filtration";
+  QueueSettings qsettings1(qname);
+  client1->createQueue(qsettings1);
+
+  int sended = 0;
+  DataHandler handler = [&sended, &qname](const PublishParams &info, const rawData &,
+                                          Id id) {
+    EXPECT_EQ(info.queueName, qname);
+    sended++;
+  };
+  LambdaEventConsumer client1Consumer(handler);
+  client1->subscribe(SubscriptionParams(qname, "tag1"), &client1Consumer);
+
+  auto client2 = std::make_shared<Client>(
+      service, AbstractClient::Params("client2", "localhost", 4040));
+  EXPECT_FALSE(client2->is_connected());
+  LambdaEventConsumer client2Consumer(handler);
+
+  client2->connect();
+  EXPECT_TRUE(client2->is_connected());
+  client2->subscribe(SubscriptionParams(qname), &client2Consumer);
+  client2->publish(PublishParams(qname, "tag1"), {1, 2, 3});
+
+  while (sended != 1 || client2->messagesInPool() != 0) { // receiver is client1
+    logger("server.client.publish-tag-filtration sended!=1");
+  }
+  sended = 0;
+  client1->publish(PublishParams(qname), {1, 2, 3});
+
+  while (sended != 1 || client1->messagesInPool() != 0) { // receiver is client2
+    logger("server.client.publish-tag-filtration sended!=2");
   }
 
   server_stop = true;

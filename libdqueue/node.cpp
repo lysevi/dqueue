@@ -9,6 +9,7 @@ namespace {
 struct QueueListener {
   bool isowner = false;      // is creator of queue
   bool issubscribed = false; // if true, owner is subscribed.
+  SubscriptionParams settings;
 };
 
 } // namespace
@@ -36,7 +37,7 @@ struct Node::Private {
       new_q.queueId = nextQueueId++;
       _queues.emplace(std::make_pair(new_q.settings.name, new_q));
     }
-	SubscriptionParams ss(qsettings.name);
+    SubscriptionParams ss(qsettings.name);
     changeSubscription(SubscribeActions::Create, ss, ownerId);
   }
 
@@ -120,7 +121,8 @@ struct Node::Private {
     return (it != _queues.end());
   }
 
-  void changeSubscription(SubscribeActions action, const SubscriptionParams&settings, Id clientId) {
+  void changeSubscription(SubscribeActions action, const SubscriptionParams &settings,
+                          Id clientId) {
     logger_info("node: changeSubscription:", settings.queueName, ",  id=#", clientId);
 
     if (!queueIsExists(settings.queueName)) { // check queue is exists.
@@ -128,8 +130,8 @@ struct Node::Private {
       case SubscribeActions::Create:
         break;
       case SubscribeActions::Subscribe:
-        logger_fatal("node: subscription to not exists queue: ", settings.queueName, ",  id=#",
-                     clientId);
+        logger_fatal("node: subscription to not exists queue: ", settings.queueName,
+                     ",  id=#", clientId);
         break;
       case SubscribeActions::Unsubscribe:
         return;
@@ -151,14 +153,17 @@ struct Node::Private {
       auto clients = &_subscriptions[settings.queueName];
       QueueListener ql;
       ql.isowner = isOwner;
+      ql.settings = settings;
       auto it = clients->find(clientId);
       if (it != clients->end()) {
         if (!isOwner) {
           it->second.issubscribed = true;
+          it->second.settings = settings;
         }
       } else {
         _subscriptions[settings.queueName][clientId] = ql;
       }
+
       break;
     }
     case SubscribeActions::Unsubscribe: {
@@ -170,23 +175,29 @@ struct Node::Private {
     }
   }
 
-  void publish(const PublishParams &settings, const rawData &rd, Id author) {
-    queueByName(settings.queueName);
+  void publish(const PublishParams &pubParam, const rawData &rd, Id author) {
+    queueByName(pubParam.queueName);
     std::map<Id, QueueListener> local_cpy;
 
     {
       std::shared_lock<std::shared_mutex> sl(_subscriptions_locker);
-      local_cpy = _subscriptions[settings.queueName];
+      local_cpy = _subscriptions[pubParam.queueName];
     }
 
     for (auto clientId : local_cpy) {
-      if (clientId.first != author) {
+      if (clientId.first != author || clientId.second.issubscribed) {
         /* if (clientId.second.isowner && !clientId.second.issubscribed) {
            continue;
          }*/
-		  MessageInfo info;
-		  info.queueName = settings.queueName;
-        _handler(info, rd, clientId.first);
+        bool isTarget = false;
+        if (clientId.second.settings.tag.empty()) {
+          isTarget = true;
+        } else {
+          isTarget = clientId.second.settings.checkTag(pubParam.tag);
+        }
+        if (isTarget) {
+          _handler(pubParam, rd, clientId.first);
+        }
       }
     }
   }
@@ -226,7 +237,8 @@ void Node::eraseClient(const Id id) {
   _impl->eraseClient(id);
 }
 
-void Node::changeSubscription(SubscribeActions action, const SubscriptionParams&settings, Id clientId) {
+void Node::changeSubscription(SubscribeActions action, const SubscriptionParams &settings,
+                              Id clientId) {
   return _impl->changeSubscription(action, settings, clientId);
 }
 

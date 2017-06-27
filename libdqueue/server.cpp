@@ -1,6 +1,7 @@
 #include <libdqueue/node.h>
 #include <libdqueue/queries.h>
 #include <libdqueue/server.h>
+#include <libdqueue/subscription_settings.h>
 #include <libdqueue/users.h>
 
 #include <functional>
@@ -61,13 +62,19 @@ void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   case (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE: {
     logger_info("server: #", i->get_id(), " subscribe");
     auto cs = queries::ChangeSubscribe(d);
-    _node->changeSubscription(Node::SubscribeActions::Subscribe, cs.qname, i->get_id());
+    SubscriptionSettings ss;
+    ss.queueName = cs.qname;
+    ss.action = SubscribeActions::Subscribe;
+    _node->changeSubscription(ss, i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::UNSUBSCRIBE: {
     logger_info("server: #", i->get_id(), " unsubscribe");
     auto cs = queries::ChangeSubscribe(d);
-    _node->changeSubscription(Node::SubscribeActions::Unsubscribe, cs.qname, i->get_id());
+    SubscriptionSettings ss;
+    ss.queueName = cs.qname;
+    ss.action = SubscribeActions::Unsubscribe;
+    _node->changeSubscription(ss, i->get_id());
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
@@ -125,11 +132,17 @@ void Server::createQueue(const QueueSettings &settings) {
 
 void Server::subscribe(const std::string &qname, EventConsumer *handler) {
   addHandler(qname, handler);
-  _node->changeSubscription(Node::SubscribeActions::Subscribe, qname, ServerID);
+  SubscriptionSettings ss;
+  ss.queueName = qname;
+  ss.action = SubscribeActions::Subscribe;
+  _node->changeSubscription(ss, ServerID);
 }
 
 void Server::unsubscribe(const std::string &qname) {
-  _node->changeSubscription(Node::SubscribeActions::Unsubscribe, qname, ServerID);
+  SubscriptionSettings ss;
+  ss.queueName = qname;
+  ss.action = SubscribeActions::Subscribe;
+  _node->changeSubscription(ss, ServerID);
 }
 
 void Server::publish(const std::string &qname, const rawData &data) {

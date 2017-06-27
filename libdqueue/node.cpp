@@ -36,7 +36,10 @@ struct Node::Private {
       new_q.queueId = nextQueueId++;
       _queues.emplace(std::make_pair(new_q.settings.name, new_q));
     }
-    changeSubscription(Node::SubscribeActions::Create, qsettings.name, ownerId);
+	SubscriptionSettings ss;
+	ss.action = SubscribeActions::Create;
+	ss.queueName = qsettings.name;
+    changeSubscription(ss, ownerId);
   }
 
   std::vector<QueueDescription> getDescription() const {
@@ -119,19 +122,18 @@ struct Node::Private {
     return (it != _queues.end());
   }
 
-  void changeSubscription(SubscribeActions action, const std::string &queueName,
-                          Id clientId) {
-    logger_info("node: changeSubscription:", queueName, ",  id=#", clientId);
+  void changeSubscription(const SubscriptionSettings&settings, Id clientId) {
+    logger_info("node: changeSubscription:", settings.queueName, ",  id=#", clientId);
 
-    if (!queueIsExists(queueName)) { // check queue is exists.
-      switch (action) {
-      case dqueue::Node::SubscribeActions::Create:
+    if (!queueIsExists(settings.queueName)) { // check queue is exists.
+      switch (settings.action) {
+      case SubscribeActions::Create:
         break;
-      case dqueue::Node::SubscribeActions::Subscribe:
-        logger_fatal("node: subscription to not exists queue: ", queueName, ",  id=#",
+      case SubscribeActions::Subscribe:
+        logger_fatal("node: subscription to not exists queue: ", settings.queueName, ",  id=#",
                      clientId);
         break;
-      case dqueue::Node::SubscribeActions::Unsubscribe:
+      case SubscribeActions::Unsubscribe:
         return;
       }
     }
@@ -143,12 +145,12 @@ struct Node::Private {
     }
 
     std::lock_guard<std::shared_mutex> sm(_subscriptions_locker);
-    bool isOwner = action == dqueue::Node::SubscribeActions::Create;
+    bool isOwner = settings.action == SubscribeActions::Create;
 
-    switch (action) {
-    case dqueue::Node::SubscribeActions::Create:
-    case dqueue::Node::SubscribeActions::Subscribe: {
-      auto clients = &_subscriptions[queueName];
+    switch (settings.action) {
+    case SubscribeActions::Create:
+    case SubscribeActions::Subscribe: {
+      auto clients = &_subscriptions[settings.queueName];
       QueueListener ql;
       ql.isowner = isOwner;
       auto it = clients->find(clientId);
@@ -157,12 +159,12 @@ struct Node::Private {
           it->second.issubscribed = true;
         }
       } else {
-        _subscriptions[queueName][clientId] = ql;
+        _subscriptions[settings.queueName][clientId] = ql;
       }
       break;
     }
-    case dqueue::Node::SubscribeActions::Unsubscribe: {
-      _subscriptions[queueName].erase(clientId);
+    case SubscribeActions::Unsubscribe: {
+      _subscriptions[settings.queueName].erase(clientId);
       break;
     }
       /*default:
@@ -226,9 +228,8 @@ void Node::eraseClient(const Id id) {
   _impl->eraseClient(id);
 }
 
-void Node::changeSubscription(Node::SubscribeActions action, const std::string &queueName,
-                              Id clientId) {
-  return _impl->changeSubscription(action, queueName, clientId);
+void Node::changeSubscription(const SubscriptionSettings&settings, Id clientId) {
+  return _impl->changeSubscription(settings, clientId);
 }
 
 void Node::publish(const std::string &qname, const rawData &rd, Id author) {

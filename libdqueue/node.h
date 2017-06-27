@@ -3,13 +3,12 @@
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/q.h>
+#include <libdqueue/subscription_settings.h>
 #include <libdqueue/users.h>
 
 namespace dqueue {
 class Node {
 public:
-  enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
-
   struct Settings {};
 
   struct QueueDescription {
@@ -35,8 +34,7 @@ public:
 
   EXPORT void eraseClient(const Id id);
 
-  EXPORT void changeSubscription(SubscribeActions action, const std::string &queueName,
-                                 Id clientId);
+  EXPORT void changeSubscription(const SubscriptionSettings &settings, Id clientId);
 
   EXPORT void publish(const std::string &qname, const rawData &rd, Id author);
 

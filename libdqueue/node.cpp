@@ -184,7 +184,9 @@ struct Node::Private {
         /* if (clientId.second.isowner && !clientId.second.issubscribed) {
            continue;
          }*/
-        _handler(qname, rd, clientId.first);
+		  MessageInfo info;
+		  info.queueName = qname;
+        _handler(info, rd, clientId.first);
       }
     }
   }

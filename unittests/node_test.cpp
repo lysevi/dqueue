@@ -9,8 +9,8 @@ TEST_CASE("node.queue_subscription") {
   Node::Settings settings;
   std::set<Id> sends;
 
-  DataHandler dhandler = [&sends](const std::string &queueName, const rawData &, Id id) {
-    EXPECT_TRUE(!queueName.empty());
+  DataHandler dhandler = [&sends](const MessageInfo&info, const rawData &, Id id) {
+    EXPECT_TRUE(!info.queueName.empty());
     sends.insert(id);
   };
 

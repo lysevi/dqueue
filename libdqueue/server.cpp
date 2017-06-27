@@ -10,8 +10,8 @@ using namespace dqueue;
 
 Server::Server(boost::asio::io_service *service, AbstractServer::params &p)
     : AbstractServer(service, p) {
-  DataHandler dhandler = [this](const std::string &queueName, const rawData &rd, Id id) {
-    this->onSendToClient(queueName, rd, id);
+  DataHandler dhandler = [this](const MessageInfo &info, const rawData &rd, Id id) {
+    this->onSendToClient(info, rd, id);
   };
   _users = UserBase::create();
   _node = std::make_unique<Node>(Node::Settings(), dhandler, _users);
@@ -34,13 +34,13 @@ void Server::onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   }
 }
 
-void Server::onSendToClient(const std::string &queueName, const rawData &rd, Id id) {
+void Server::onSendToClient(const MessageInfo &info, const rawData &rd, Id id) {
   if (id == ServerID) {
-    this->callConsumer(queueName, rd, id);
+    this->callConsumer(info, rd, id);
   } else {
     std::lock_guard<std::mutex> lg(_locker);
     // TODO make one allocation in onNewMessage
-    queries::Publish pub(queueName, rd, _nextMessageId++);
+    queries::Publish pub(info.queueName, rd, _nextMessageId++);
     auto nd = pub.toNetworkMessage();
     this->sendTo(id, nd);
   }

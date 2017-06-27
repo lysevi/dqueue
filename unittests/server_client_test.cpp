@@ -150,10 +150,10 @@ TEST_CASE("server.client.create_queue") {
 
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
-  DataHandler handler = [&test_data, &sended, &qname](const std::string &queueName,
+  DataHandler handler = [&test_data, &sended, &qname](const MessageInfo&info,
                                                       const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
-    EXPECT_EQ(queueName, qname);
+    EXPECT_EQ(info.queueName, qname);
     sended++;
   };
 
@@ -170,10 +170,10 @@ TEST_CASE("server.client.create_queue") {
     logger("server.client.create_queue server->getDescription is empty");
   }
 
-  DataHandler server_handler = [&test_data, &sended, &qname](const std::string &queueName,
+  DataHandler server_handler = [&test_data, &sended, &qname](const MessageInfo&info,
                                                              const rawData &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
-    EXPECT_EQ(queueName, qname);
+    EXPECT_EQ(info.queueName, qname);
     sended++;
   };
 
@@ -354,9 +354,9 @@ TEST_CASE("server.client.publish-from-pool") {
 
   std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &ids, &qname](const std::string &queueName,
+  DataHandler handler = [&sended, &ids, &qname](const MessageInfo&info,
                                                 const rawData &, Id id) {
-    EXPECT_EQ(queueName, qname);
+    EXPECT_EQ(info.queueName, qname);
     sended++;
     ids.insert(id);
   };

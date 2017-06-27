@@ -36,7 +36,7 @@ private:
   void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;
   void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                       const boost::system::error_code &err) override;
-  void onSendToClient(const std::string &queueName, const rawData &rd, Id id);
+  void onSendToClient(const MessageInfo &info, const rawData &rd, Id id);
   void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d, bool &cancel);
 
   void sendOk(ClientConnection_Ptr i, uint64_t messageId);

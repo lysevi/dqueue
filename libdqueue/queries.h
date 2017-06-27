@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libdqueue/iqueue_client.h>
 #include <libdqueue/kinds.h>
 #include <libdqueue/network_message.h>
 #include <libdqueue/serialisation.h>
@@ -136,6 +137,12 @@ struct Publish {
 
     Scheme::write(nd->value(), qname, data, messageId);
     return nd;
+  }
+
+  MessageInfo toInfo() const {
+    MessageInfo result;
+    result.queueName = qname;
+    return result;
   }
 };
 } // namespace queries

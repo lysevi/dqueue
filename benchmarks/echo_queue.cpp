@@ -119,7 +119,7 @@ public:
                dqueue::Id) override {
     if (messagesInPool() < size_t(5)) {
       publish(dqueue::PublishParams(info.queueName, "client"), d);
-      client_sended++;
+      client_sended.fetch_add(1);
     }
   }
 };
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
   dqueue::DataHandler server_handler = [](const dqueue::PublishParams &info,
                                           const dqueue::rawData &d, dqueue::Id) {
     server->publish(dqueue::PublishParams(info.queueName, "server"), d);
-    server_received++;
+	server_received.fetch_add(1);
   };
   dqueue::LambdaEventConsumer serverConsumer(server_handler);
   if (run_server) {

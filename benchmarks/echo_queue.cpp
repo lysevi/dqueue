@@ -199,9 +199,7 @@ int main(int argc, char *argv[]) {
     auto cl = std::make_shared<BenchmarkClient>(client_service.get(), client_param);
     dqueue::logger_info("client ", i, " start connection");
     cl->async_connect();
-    dqueue::logger_info("client ", i, " was connected");
     clients.push_back(cl);
-    dqueue::logger("client #", i, " connected");
   }
 
   show_thread = std::move(std::thread{show_info_thread});

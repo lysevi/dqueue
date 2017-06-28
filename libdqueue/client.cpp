@@ -102,7 +102,7 @@ Id Client::getId() const {
   return _id;
 }
 
-void Client::createQueue(const QueueSettings &settings) {
+void Client::createQueue(const QueueSettings &settings, const OperationType ot) {
   QueryResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
@@ -117,7 +117,8 @@ void Client::createQueue(const QueueSettings &settings) {
   qr.locker->lock();
 }
 
-void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler) {
+void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler,
+                       const OperationType ot) {
   QueryResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
@@ -131,10 +132,12 @@ void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handle
     qr = makeNewQResult(msgId);
     send(nd);
   }
-  qr.locker->lock();
+  if (ot == OperationType::Sync) {
+    qr.locker->lock();
+  }
 }
 
-void Client::unsubscribe(const std::string &qname) {
+void Client::unsubscribe(const std::string &qname, const OperationType ot) {
   QueryResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
@@ -149,7 +152,9 @@ void Client::unsubscribe(const std::string &qname) {
     qr = makeNewQResult(msgId);
     send(nd);
   }
-  qr.locker->lock();
+  if (ot == OperationType::Sync) {
+    qr.locker->lock();
+  }
 }
 
 void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data) {

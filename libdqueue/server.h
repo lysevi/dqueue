@@ -5,10 +5,10 @@
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/node.h>
+#include <libdqueue/node_settings.h>
 #include <libdqueue/queries.h>
 #include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
-#include <libdqueue/node_settings.h>
 
 #include <functional>
 #include <mutex>
@@ -28,10 +28,13 @@ public:
   EXPORT std::vector<User> users() const;
 
   EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) override;
-  EXPORT void createQueue(const QueueSettings &settings) override;
-  EXPORT void subscribe(const SubscriptionParams&settings, EventConsumer *handler) override;
-  EXPORT void unsubscribe(const std::string &qname) override;
-  EXPORT void publish(const PublishParams& settings, const rawData &data) override;
+  EXPORT void createQueue(const QueueSettings &settings,
+                          const OperationType ot = OperationType::Sync) override;
+  EXPORT void subscribe(const SubscriptionParams &settings, EventConsumer *handler,
+                        const OperationType ot = OperationType::Sync) override;
+  EXPORT void unsubscribe(const std::string &qname,
+                          const OperationType ot = OperationType::Sync) override;
+  EXPORT void publish(const PublishParams &settings, const rawData &data) override;
 
 private:
   void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;

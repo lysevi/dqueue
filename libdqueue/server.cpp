@@ -124,16 +124,17 @@ std::vector<User> Server::users() const {
   return _users->users();
 }
 
-void Server::createQueue(const QueueSettings &settings) {
+void Server::createQueue(const QueueSettings &settings, const OperationType ) {
   _node->createQueue(settings, ServerID);
 }
 
-void Server::subscribe(const SubscriptionParams &settings, EventConsumer *handler) {
+void Server::subscribe(const SubscriptionParams &settings, EventConsumer *handler,
+                       const OperationType ) {
   addHandler(settings, handler);
   _node->changeSubscription(SubscribeActions::Subscribe, settings, ServerID);
 }
 
-void Server::unsubscribe(const std::string &qname) {
+void Server::unsubscribe(const std::string &qname, const OperationType ) {
   SubscriptionParams ss(qname);
   _node->changeSubscription(SubscribeActions::Subscribe, ss, ServerID);
 }

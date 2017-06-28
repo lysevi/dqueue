@@ -38,10 +38,12 @@ public:
   EXPORT virtual void onMessage(const std::string & /*queueName*/,
                                 const rawData & /*d*/){};
 
-  EXPORT void createQueue(const QueueSettings &settings) override;
-  EXPORT void subscribe(const SubscriptionParams &settings,
-                        EventConsumer *handler) override;
-  EXPORT void unsubscribe(const std::string &qname) override;
+  EXPORT void createQueue(const QueueSettings &settings,
+                          const OperationType ot = OperationType::Sync) override;
+  EXPORT void subscribe(const SubscriptionParams &settings, EventConsumer *handler,
+                        const OperationType ot = OperationType::Sync) override;
+  EXPORT void unsubscribe(const std::string &qname,
+                          const OperationType ot = OperationType::Sync) override;
   EXPORT void publish(const PublishParams &settings,
                       const std::vector<uint8_t> &data) override;
 

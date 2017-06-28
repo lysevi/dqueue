@@ -41,6 +41,8 @@ protected:
   DataHandler _handler;
 };
 
+enum class OperationType { Async, Sync };
+
 class IQueueClient {
 public:
   virtual ~IQueueClient() {}
@@ -63,9 +65,12 @@ public:
     }
   }
 
-  virtual void createQueue(const QueueSettings &settings) = 0;
-  virtual void subscribe(const SubscriptionParams &settings, EventConsumer *handler) = 0;
-  virtual void unsubscribe(const std::string &qname) = 0;
+  virtual void createQueue(const QueueSettings &settings,
+                           const OperationType ot = OperationType::Sync) = 0;
+  virtual void subscribe(const SubscriptionParams &settings, EventConsumer *handler,
+                         const OperationType ot = OperationType::Sync) = 0;
+  virtual void unsubscribe(const std::string &qname,
+                           const OperationType ot = OperationType::Sync) = 0;
   virtual void publish(const PublishParams &settings, const rawData &data) = 0;
 
 protected:

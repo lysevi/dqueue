@@ -32,26 +32,41 @@ bool run_server = true;
 size_t clients_count = 1;
 size_t server_threads = 2;
 size_t queue_count = 1;
-
+int maxSends = 100000;
 std::shared_ptr<dqueue::Server> server;
 std::unique_ptr<boost::asio::io_service> server_service;
 std::unique_ptr<boost::asio::io_service> client_service;
-bool server_thread_stop = false;
-void server_thread() {
-  while (!server_thread_stop) {
-    server_service->run();
-  }
-}
-
-void client_thread() {
-  while (!server_thread_stop) {
-    client_service->run();
-  }
-}
 
 static std::atomic_int server_received;
 static std::atomic_int client_sended;
 bool show_info_stop = false;
+
+void server_thread() {
+  bool srv = false;
+  bool clnt = false;
+  while (true) {
+    server_service->run_one();
+    srv = server_received.load() > maxSends;
+    clnt = client_sended.load() > maxSends;
+    if (srv && clnt) {
+      break;
+    }
+  }
+}
+
+void client_thread() {
+  bool srv = false;
+  bool clnt = false;
+  while (true) {
+    client_service->run();
+    srv = server_received.load() > maxSends;
+    clnt = client_sended.load() > maxSends;
+    if (srv && clnt) {
+      break;
+    }
+  }
+}
+
 void show_info_thread() {
   uint64_t lastRecv = server_received.load();
   uint64_t lastSend = client_sended.load();
@@ -63,9 +78,15 @@ void show_info_thread() {
     auto diffRecv = curRecv - lastRecv;
     auto diffSend = curSend - lastSend;
     if (run_server) {
-      std::cout << "recv speed: " << diffRecv;
+      std::cout << " recv: " << 100.0 * curRecv / float(maxSends) << "% ";
+    }
+    if (clients_count != 0) {
+      std::cout << " send: " << 100.0 * curSend / float(maxSends) << "% ";
     }
 
+    if (run_server) {
+      std::cout << " recv speed: " << diffRecv;
+    }
     if (clients_count != 0) {
       std::cout << " send speed: " << diffSend / clients_count;
     }
@@ -88,15 +109,16 @@ public:
     dqueue::Client::onConnect();
     for (size_t j = 0; j < queue_count; ++j) {
       auto qname = "serverQ_" + std::to_string(j);
-      subscribe(qname, this);
-      publish(qname, {1});
+      dqueue::SubscriptionParams sp(qname, "server");
+      subscribe(sp, this, dqueue::OperationType::Async);
+      publish(dqueue::PublishParams(qname, "client"), {1});
     }
   }
 
   void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
                dqueue::Id) override {
     if (messagesInPool() < size_t(5)) {
-      publish(info.queueName, d);
+      publish(dqueue::PublishParams(info.queueName, "client"), d);
       client_sended++;
     }
   }
@@ -115,6 +137,7 @@ int main(int argc, char *argv[]) {
   opts("S,server-threads", "queues count.", cxxopts::value<size_t>(server_threads));
   opts("dont-run-server", "run server.");
   opts("clients", "clients", cxxopts::value<size_t>(clients_count));
+  opts("maxSends", "maximum sends", cxxopts::value<int>(maxSends));
 
   options.parse(argc, argv);
 
@@ -135,7 +158,7 @@ int main(int argc, char *argv[]) {
   p.port = 4040;
   dqueue::DataHandler server_handler = [](const dqueue::PublishParams &info,
                                           const dqueue::rawData &d, dqueue::Id) {
-    server->publish(dqueue::PublishParams(info.queueName), d);
+    server->publish(dqueue::PublishParams(info.queueName, "server"), d);
     server_received++;
   };
   dqueue::LambdaEventConsumer serverConsumer(server_handler);
@@ -158,7 +181,8 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < queue_count; ++i) {
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
       server->createQueue(qs);
-      server->subscribe(qs.name, &serverConsumer);
+      dqueue::SubscriptionParams sp(qs.name, "client");
+      server->subscribe(sp, &serverConsumer);
     }
   }
 

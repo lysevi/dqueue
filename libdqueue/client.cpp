@@ -29,6 +29,7 @@ void Client::disconnect() {
 }
 
 void Client::onConnect() {
+  logger("client: send login.");
   queries::Login lg(this->_params.login);
   _loginConfirmed = false;
   this->send(lg.toNetworkMessage());
@@ -37,6 +38,7 @@ void Client::onConnect() {
   for (auto p : all) {
     this->publish_inner(p);
   }
+  logger("client: send login sended.");
 }
 
 void Client::onMessageSended(const NetworkMessage_ptr &d) {}

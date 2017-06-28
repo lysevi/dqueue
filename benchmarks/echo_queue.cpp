@@ -85,10 +85,10 @@ void show_info_thread() {
     }
 
     if (run_server) {
-      std::cout << " (recv: " << diffRecv << "/sec. - " << curRecv<<")";
+      std::cout << " (recv: " << diffRecv << "/sec. - " << curRecv << ")";
     }
     if (clients_count != 0) {
-      std::cout << " (send: " << diffSend / clients_count << "/sec. : " << curSend<<")";
+      std::cout << " (send: " << diffSend / clients_count << "/sec. : " << curSend << ")";
     }
     std::cout << std::endl;
     lastRecv = curRecv;
@@ -106,10 +106,13 @@ public:
       : dqueue::Client(service, _params) {}
 
   void onConnect() override {
+    dqueue::logger("benchmark_client #", dqueue::Client::getId(), " connected.");
     dqueue::Client::onConnect();
     for (size_t j = 0; j < queue_count; ++j) {
       auto qname = "serverQ_" + std::to_string(j);
       dqueue::SubscriptionParams sp(qname, "server");
+      dqueue::logger("benchmark_client #", dqueue::Client::getId(), " subscribe to ",
+                     qname);
       subscribe(sp, this, dqueue::OperationType::Async);
       publish(dqueue::PublishParams(qname, "client"), {1});
     }

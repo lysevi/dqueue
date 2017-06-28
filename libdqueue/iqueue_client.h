@@ -6,11 +6,11 @@
 #include <libdqueue/users.h>
 #include <libdqueue/utils/utils.h>
 #include <functional>
-#include <utility>
 #include <set>
 #include <shared_mutex>
+#include <type_traits>
 #include <unordered_map>
-
+#include <utility>
 namespace dqueue {
 using rawData = std::vector<uint8_t>;
 // TODO Id must be std::vector<Id> for speedup and less memory allocations.
@@ -19,13 +19,15 @@ using DataHandler =
 
 class EventConsumer {
 public:
-  void setId(int id_) { _consumerId = id_; }
-  int getId() const { return _consumerId; }
+  static const Id DefaultId = std::numeric_limits<Id>::max();
+  EventConsumer() { _consumerId = DefaultId; }
+  void setId(Id id_) { _consumerId = id_; }
+  Id getId() const { return _consumerId; }
 
   virtual void consume(const PublishParams &info, const rawData &d, Id id) = 0;
 
 private:
-  int _consumerId;
+  Id _consumerId;
 };
 
 class LambdaEventConsumer : public EventConsumer {
@@ -70,16 +72,25 @@ protected:
   void addHandler(const SubscriptionParams &settings, EventConsumer *handler) {
     if (handler != nullptr) {
       std::lock_guard<std::shared_mutex> lg(_eventHandlers_locker);
-      handler->setId(_nextConsumersId++);
-      _eventHandlers[handler->getId()] = std::make_pair(handler, settings);
-      _queue2handler[settings.queueName].insert(handler->getId());
+      if (handler->getId() != EventConsumer::DefaultId) {
+        auto it = _eventHandlers.find(handler->getId());
+        if (it == _eventHandlers.end()) {
+          THROW_EXCEPTION("Reuse  of the handler");
+        }
+        it->second.second = settings;
+        _queue2handler[settings.queueName].insert(handler->getId());
+      } else {
+        handler->setId(_nextConsumersId++);
+        _eventHandlers[handler->getId()] = std::make_pair(handler, settings);
+        _queue2handler[settings.queueName].insert(handler->getId());
+      }
     }
   }
 
 private:
   std::shared_mutex _eventHandlers_locker;
-  int _nextConsumersId = 0;
-  std::unordered_map<int, std::pair<EventConsumer *, SubscriptionParams>> _eventHandlers;
-  std::unordered_map<std::string, std::set<int>> _queue2handler;
+  Id _nextConsumersId = 0;
+  std::unordered_map<Id, std::pair<EventConsumer *, SubscriptionParams>> _eventHandlers;
+  std::unordered_map<std::string, std::set<Id>> _queue2handler;
 };
 } // namespace dqueue

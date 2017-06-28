@@ -158,8 +158,9 @@ TEST_CASE("server.client.create_queue") {
   };
 
   LambdaEventConsumer clientConsumer(handler);
+  LambdaEventConsumer clientConsumer2(handler);
   client->subscribe(SubscriptionParams(qname), &clientConsumer);
-  client2->subscribe(SubscriptionParams(qname), &clientConsumer);
+  client2->subscribe(SubscriptionParams(qname), &clientConsumer2);
 
   while (true) {
     auto ds = server->getDescription();
@@ -402,11 +403,14 @@ TEST_CASE("server.client.publish-tag-filtration") {
   client1->createQueue(qsettings1);
 
   int sended = 0;
-  DataHandler handler = [&sended, &qname](const PublishParams &info, const rawData &,
-                                          Id id) {
+  std::set<Id> ids;
+  auto handler = [&sended, &qname, &ids](const PublishParams &info, const rawData &,
+                                         Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;
+    ids.insert(id);
   };
+
   LambdaEventConsumer client1Consumer(handler);
   client1->subscribe(SubscriptionParams(qname, "tag1"), &client1Consumer);
 
@@ -414,22 +418,36 @@ TEST_CASE("server.client.publish-tag-filtration") {
       service, AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
   LambdaEventConsumer client2Consumer(handler);
-
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
   client2->subscribe(SubscriptionParams(qname), &client2Consumer);
+
   client2->publish(PublishParams(qname, "tag1"), {1, 2, 3});
 
-  while (sended != 1 || client2->messagesInPool() != 0) { // receiver is client1
-    logger("server.client.publish-tag-filtration sended!=1");
-  }
-  sended = 0;
-  client1->publish(PublishParams(qname), {1, 2, 3});
-
-  while (sended != 1 || client1->messagesInPool() != 0) { // receiver is client2
+  // receiver is client1 as subscriber to tag1, and client2
+  while (sended != 2 || client2->messagesInPool() != 0) {
     logger("server.client.publish-tag-filtration sended!=2");
   }
+  sended = 0;
+  EXPECT_EQ(ids.size(), size_t(2));
+  ids.clear();
+  client1->publish(PublishParams(qname), {1, 2, 3});
 
+  while (sended != 1 ||
+         client1->messagesInPool() != 0) { // receiver is client2 as subscriber to 'all'
+    logger("server.client.publish-tag-filtration sended!=2");
+  }
+  EXPECT_TRUE(ids.find(client1->getId()) == ids.end());
+  ids.clear();
+  sended = 0;
+  client2->subscribe(SubscriptionParams(qname, "tag2"), &client2Consumer);
+  client1->publish(PublishParams(qname, "tag2"), {1, 2, 3});
+
+  while (sended != 1 ||
+         client1->messagesInPool() != 0) { // receiver is client2 as subscriber to tag2
+    logger("server.client.publish-tag-filtration sended!=2");
+  }
+  EXPECT_TRUE(ids.find(client1->getId()) == ids.end());
   server_stop = true;
   while (server != nullptr) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

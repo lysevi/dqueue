@@ -175,6 +175,7 @@ struct Node::Private {
     }
   }
 
+  // TODO rm 'author'. unused parameter.
   void publish(const PublishParams &pubParam, const rawData &rd, Id author) {
     queueByName(pubParam.queueName);
     std::map<Id, QueueListener> local_cpy;
@@ -185,7 +186,8 @@ struct Node::Private {
     }
 
     for (auto clientId : local_cpy) {
-      if (clientId.first != author || clientId.second.issubscribed) {
+      // owner receive messages only if subscribe to queue
+      if (!clientId.second.isowner || clientId.second.issubscribed) {
         /* if (clientId.second.isowner && !clientId.second.issubscribed) {
            continue;
          }*/

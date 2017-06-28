@@ -16,8 +16,6 @@ struct QueueSettings {
 struct Queue {
   int queueId;
   QueueSettings settings;
-  uint64_t last_update;
-  Queue(const QueueSettings &settings_) : settings(settings_) { updateTime(); }
-  void updateTime();
+  Queue(const QueueSettings &settings_) : settings(settings_) {}
 };
 } // namespace dqueue

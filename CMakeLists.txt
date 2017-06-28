@@ -43,7 +43,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 
-set(BOOST_DEP system date_time)
+set(BOOST_DEP system)
 
 IF(DQUEUE_ENABLE_DOUBLECHECKS)
  add_definitions(-DDOUBLE_CHECKS)

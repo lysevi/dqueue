@@ -60,13 +60,13 @@ void AsyncIO::send(const NetworkMessage_ptr d) {
   auto send_buffer_size = std::get<0>(ds);
 
   if (auto spt = _sock.lock()) {
-    _messages_to_send++;
+    _messages_to_send.fetch_add(1);
     auto buf = buffer(send_buffer, send_buffer_size);
     async_write(*spt.get(), buf, [ptr, d](auto err, auto /*read_bytes*/) {
       if (err) {
         ptr->_on_error_handler(d, err);
       } else {
-        ptr->_messages_to_send--;
+        ptr->_messages_to_send.fetch_sub(1);
         assert(ptr->_messages_to_send >= 0);
         ptr->_on_sended_handler(d);
       }

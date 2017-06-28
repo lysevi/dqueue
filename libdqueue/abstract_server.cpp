@@ -111,7 +111,7 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
       std::lock_guard<std::mutex> lg(self->_locker_connections);
       new_client = std::make_shared<AbstractServer::ClientConnection>((Id)self->_next_id,
                                                                       sock, self);
-      self->_next_id++;
+	  self->_next_id.fetch_add(1);
     }
 
     if (self->onNewConnection(new_client) == ON_NEW_CONNECTION_RESULT::ACCEPT) {

@@ -85,10 +85,10 @@ void show_info_thread() {
     }
 
     if (run_server) {
-      std::cout << " recv speed: " << diffRecv;
+      std::cout << " (recv speed: " << diffRecv << " recv: " << curRecv<<")";
     }
     if (clients_count != 0) {
-      std::cout << " send speed: " << diffSend / clients_count;
+      std::cout << " (send speed: " << diffSend / clients_count << " send: " << curSend<<")";
     }
     std::cout << std::endl;
     lastRecv = curRecv;
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
   dqueue::DataHandler server_handler = [](const dqueue::PublishParams &info,
                                           const dqueue::rawData &d, dqueue::Id) {
     server->publish(dqueue::PublishParams(info.queueName, "server"), d);
-	server_received.fetch_add(1);
+    server_received.fetch_add(1);
   };
   dqueue::LambdaEventConsumer serverConsumer(server_handler);
   if (run_server) {

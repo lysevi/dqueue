@@ -166,22 +166,16 @@ int main(int argc, char *argv[]) {
     server->publish(dqueue::PublishParams(info.queueName, "server"), d);
     server_received.fetch_add(1);
   };
+
   dqueue::LambdaEventConsumer serverConsumer(server_handler);
-  if (run_server) {
-    server = std::make_shared<dqueue::Server>(server_service.get(), p);
-    server->serverStart();
-  }
-
-  for (size_t i = 0; i < clients_count; ++i) {
-    dqueue::logger("start client thread #", i);
-    threads.emplace_back(&client_thread);
-  }
-
   if (run_server) {
     for (size_t i = 0; i < server_threads; ++i) {
       dqueue::logger("start thread #", i);
       threads.emplace_back(&server_thread);
     }
+
+    server = std::make_shared<dqueue::Server>(server_service.get(), p);
+    server->serverStart();
 
     for (size_t i = 0; i < queue_count; ++i) {
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
@@ -191,10 +185,15 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  for (size_t i = 0; i < clients_count; ++i) {
+    dqueue::logger("start client thread #", i);
+    threads.emplace_back(&client_thread);
+  }
+
   std::list<std::shared_ptr<BenchmarkClient>> clients;
 
   for (size_t i = 0; i < clients_count; ++i) {
-    dqueue::AbstractClient::Params client_param("client_" + std::to_string(i),
+    dqueue::AbstractClient::Params client_param("client-" + std::to_string(i),
                                                 "localhost", 4040);
     auto cl = std::make_shared<BenchmarkClient>(client_service.get(), client_param);
     dqueue::logger_info("client ", i, " start connection");

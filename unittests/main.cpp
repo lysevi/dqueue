@@ -24,7 +24,6 @@ public:
       ss << "[dbg] " << msg << std::endl;
       break;
     }
-	std::cout << ss.str();
     if (kind == dqueue::utils::LOG_MESSAGE_KIND::FATAL) {
       std::cerr << ss.str();
     } else {

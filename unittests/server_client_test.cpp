@@ -353,13 +353,11 @@ TEST_CASE("server.client.publish-from-pool") {
   QueueSettings qsettings1(qname);
   client->createQueue(qsettings1);
 
-  std::set<Id> ids;
   int sended = 0;
-  DataHandler handler = [&sended, &ids, &qname](const PublishParams &info,
-                                                const rawData &, Id id) {
+  DataHandler handler = [&sended, &qname](const PublishParams &info, const rawData &,
+                                          Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;
-    ids.insert(id);
   };
   LambdaEventConsumer clientConsumer(handler);
   client->subscribe(SubscriptionParams(qname), &clientConsumer);
@@ -371,7 +369,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
-  while (sended != 1 || client2->messagesInPool() != 0 || ids.size() > 1) {
+  while (sended != 1 && client2->messagesInPool() != 0) {
     logger("server.client.publish-from-pool sended!=1");
   }
 

@@ -57,19 +57,21 @@ void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
     queries::CreateQueue cq(d);
     QueueSettings qs(cq.name);
     _node->createQueue(qs, i->get_id());
+    sendOk(i, cq.msgId);
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE: {
     logger_info("server: #", i->get_id(), " subscribe");
     auto cs = queries::ChangeSubscribe(d);
     _node->changeSubscription(SubscribeActions::Subscribe, cs.toParams(), i->get_id());
+    sendOk(i, cs.msgId);
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::UNSUBSCRIBE: {
     logger_info("server: #", i->get_id(), " unsubscribe");
     auto cs = queries::ChangeSubscribe(d);
-    _node->changeSubscription(SubscribeActions::Unsubscribe, cs.toParams(),
-                              i->get_id());
+    _node->changeSubscription(SubscribeActions::Unsubscribe, cs.toParams(), i->get_id());
+    sendOk(i, cs.msgId);
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {

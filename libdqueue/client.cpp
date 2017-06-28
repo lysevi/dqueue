@@ -55,7 +55,17 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   case (NetworkMessage::message_kind)MessageKinds::OK: {
     logger_info("client (", _params.login, "): recv ok");
     auto cs = queries::Ok(d);
-    _messagePool->erase(cs.id);
+
+    {
+      std::lock_guard<std::shared_mutex> lg(_locker);
+      auto it = _queries.find(cs.id);
+      if (it == _queries.end()) {
+        _messagePool->erase(cs.id);
+      } else {
+        it->second.locker->unlock();
+        _queries.erase(it);
+      }
+    }
     break;
   }
 
@@ -93,38 +103,58 @@ Id Client::getId() const {
 }
 
 void Client::createQueue(const QueueSettings &settings) {
-  logger_info("client (", _params.login, "): createQueue ", settings.name);
-  queries::CreateQueue cq(settings.name);
-  auto nd = cq.toNetworkMessage();
-  send(nd);
+  QueryResult qr;
+  {
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    auto msgId = getNextId();
+    logger_info("client (", _params.login, "): createQueue ", settings.name);
+    queries::CreateQueue cq(settings.name, msgId);
+    auto nd = cq.toNetworkMessage();
+
+    qr = makeNewQResult(msgId);
+    send(nd);
+  }
+  qr.locker->lock();
 }
 
 void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler) {
-  logger_info("client (", _params.login, "): subscribe ", settings.queueName);
-  this->addHandler(settings, handler);
-  queries::ChangeSubscribe cs(settings);
-  auto nd = cs.toNetworkMessage();
-  nd->cast_to_header()->kind =
-      static_cast<NetworkMessage::message_kind>(MessageKinds::SUBSCRIBE);
-
-  send(nd);
+  QueryResult qr;
+  {
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    logger_info("client (", _params.login, "): subscribe ", settings.queueName);
+    this->addHandler(settings, handler);
+    auto msgId = getNextId();
+    queries::ChangeSubscribe cs(settings, msgId);
+    auto nd = cs.toNetworkMessage();
+    nd->cast_to_header()->kind =
+        static_cast<NetworkMessage::message_kind>(MessageKinds::SUBSCRIBE);
+    qr = makeNewQResult(msgId);
+    send(nd);
+  }
+  qr.locker->lock();
 }
 
 void Client::unsubscribe(const std::string &qname) {
-  logger_info("client (", _params.login, "): unsubscribe ", qname);
-  SubscriptionParams settings{qname};
-  queries::ChangeSubscribe cs(settings);
+  QueryResult qr;
+  {
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    logger_info("client (", _params.login, "): unsubscribe ", qname);
+    SubscriptionParams settings{qname};
+    auto msgId = getNextId();
+    queries::ChangeSubscribe cs(settings, msgId);
 
-  auto nd = cs.toNetworkMessage();
-  nd->cast_to_header()->kind =
-      static_cast<NetworkMessage::message_kind>(MessageKinds::UNSUBSCRIBE);
-
-  send(nd);
+    auto nd = cs.toNetworkMessage();
+    nd->cast_to_header()->kind =
+        static_cast<NetworkMessage::message_kind>(MessageKinds::UNSUBSCRIBE);
+    qr = makeNewQResult(msgId);
+    send(nd);
+  }
+  qr.locker->lock();
 }
 
 void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data) {
   std::lock_guard<std::shared_mutex> lg(_locker);
-  queries::Publish pb(settings, data, _nextMessageId++);
+  queries::Publish pb(settings, data, getNextId());
   _messagePool->append(pb);
 
   publish_inner(pb);

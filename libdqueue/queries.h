@@ -74,20 +74,23 @@ struct LoginConfirm {
 
 struct CreateQueue {
   std::string name;
+  uint64_t msgId;
+  using Scheme = serialisation::Scheme<std::string, uint64_t>;
 
-  using Scheme = serialisation::Scheme<std::string>;
+  CreateQueue(const std::string &queue, uint64_t msgId_) {
+    name = queue;
+    msgId = msgId_;
+  }
 
-  CreateQueue(const std::string &queue) { name = queue; }
-
-  CreateQueue(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), name); }
+  CreateQueue(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), name, msgId); }
 
   NetworkMessage_ptr toNetworkMessage() const {
-    auto neededSize = Scheme::capacity(name);
+    auto neededSize = Scheme::capacity(name, msgId);
 
     auto nd = std::make_shared<NetworkMessage>(
         neededSize, (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE);
 
-    Scheme::write(nd->value(), name);
+    Scheme::write(nd->value(), name, msgId);
     return nd;
   }
 };
@@ -95,22 +98,26 @@ struct CreateQueue {
 struct ChangeSubscribe {
   std::string qname;
   std::string tag;
-  using Scheme = serialisation::Scheme<std::string, std::string>;
+  uint64_t msgId;
+  using Scheme = serialisation::Scheme<std::string, std::string, uint64_t>;
 
-  ChangeSubscribe(const SubscriptionParams &settings) {
+  ChangeSubscribe(const SubscriptionParams &settings, uint64_t msgId_) {
     qname = settings.queueName;
     tag = settings.tag;
+    msgId = msgId_;
   }
 
-  ChangeSubscribe(const NetworkMessage_ptr &nd) { Scheme::read(nd->value(), qname, tag); }
+  ChangeSubscribe(const NetworkMessage_ptr &nd) {
+    Scheme::read(nd->value(), qname, tag, msgId);
+  }
 
   NetworkMessage_ptr toNetworkMessage() const {
-    auto neededSize = Scheme::capacity(qname, tag);
+    auto neededSize = Scheme::capacity(qname, tag, msgId);
 
     auto nd = std::make_shared<NetworkMessage>(
         neededSize, (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);
 
-    Scheme::write(nd->value(), qname, tag);
+    Scheme::write(nd->value(), qname, tag, msgId);
     return nd;
   }
 

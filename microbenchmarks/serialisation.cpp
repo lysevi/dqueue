@@ -7,8 +7,8 @@ using namespace dqueue::queries;
 class Serialisation : public benchmark::Fixture {
   virtual void SetUp(const ::benchmark::State &) {
     const std::string qname = "Serialisation.queue";
-    _CreateQueue = std::make_unique<CreateQueue>(qname);
-    _ChangeSubscribe = std::make_unique<ChangeSubscribe>(qname);
+    _CreateQueue = std::make_unique<CreateQueue>(qname, 4);
+    _ChangeSubscribe = std::make_unique<ChangeSubscribe>(qname, 0);
     _Publish = std::make_unique<Publish>(
         qname, std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, uint64_t(1));
   }

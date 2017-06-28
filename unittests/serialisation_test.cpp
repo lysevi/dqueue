@@ -80,7 +80,7 @@ TEST_CASE("serialisation.scheme") {
 TEST_CASE("serialisation.createQueue") {
   std::string name = "node.createQueue.name";
 
-  CreateQueue qs(name);
+  CreateQueue qs(name, 0);
   EXPECT_EQ(qs.name, name);
 
   auto nd = qs.toNetworkMessage();
@@ -94,7 +94,7 @@ TEST_CASE("serialisation.createQueue") {
 
 TEST_CASE("serialisation.subscribe") {
   std::string qname = "serialisation.subscribe";
-  ChangeSubscribe cs{qname};
+  ChangeSubscribe cs{qname, 0};
   auto nd = cs.toNetworkMessage();
   EXPECT_EQ(nd->cast_to_header()->kind,
             (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);

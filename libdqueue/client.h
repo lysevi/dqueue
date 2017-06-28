@@ -8,6 +8,7 @@
 #include <libdqueue/node.h>
 #include <libdqueue/q.h>
 #include <libdqueue/queries.h>
+#include <libdqueue/utils/async/locker.h>
 #include <libdqueue/utils/utils.h>
 #include <boost/asio.hpp>
 #include <cstring>
@@ -38,15 +39,34 @@ public:
                                 const rawData & /*d*/){};
 
   EXPORT void createQueue(const QueueSettings &settings) override;
-  EXPORT void subscribe(const SubscriptionParams&settings, EventConsumer *handler) override;
+  EXPORT void subscribe(const SubscriptionParams &settings,
+                        EventConsumer *handler) override;
   EXPORT void unsubscribe(const std::string &qname) override;
-  EXPORT void publish(const PublishParams& settings,
+  EXPORT void publish(const PublishParams &settings,
                       const std::vector<uint8_t> &data) override;
 
 private:
+  struct QueryResult {
+    std::shared_ptr<utils::async::locker> locker;
+    static QueryResult makeNew() {
+      QueryResult result;
+      result.locker = std::make_shared<utils::async::locker>();
+      return result;
+    }
+  };
+
   EXPORT void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) override;
   void publish_inner(const queries::Publish &pb);
   void send(const NetworkMessage_ptr &nd);
+
+  uint64_t getNextId() { return _nextMessageId++; }
+
+  QueryResult makeNewQResult(uint64_t msgId) {
+    auto qr = QueryResult::makeNew();
+    _queries[msgId] = qr;
+    qr.locker->lock();
+    return qr;
+  }
 
 protected:
   mutable std::shared_mutex _locker;
@@ -54,5 +74,6 @@ protected:
   MessagePool_Ptr _messagePool;
   bool _loginConfirmed = false;
   Id _id;
+  std::map<uint64_t, QueryResult> _queries;
 };
 } // namespace dqueue

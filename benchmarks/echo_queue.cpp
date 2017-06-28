@@ -85,10 +85,10 @@ void show_info_thread() {
     }
 
     if (run_server) {
-      std::cout << " (recv speed: " << diffRecv << " recv: " << curRecv<<")";
+      std::cout << " (recv: " << diffRecv << "/sec. - " << curRecv<<")";
     }
     if (clients_count != 0) {
-      std::cout << " (send speed: " << diffSend / clients_count << " send: " << curSend<<")";
+      std::cout << " (send: " << diffSend / clients_count << "/sec. : " << curSend<<")";
     }
     std::cout << std::endl;
     lastRecv = curRecv;

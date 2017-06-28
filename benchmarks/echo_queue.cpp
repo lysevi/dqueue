@@ -58,7 +58,7 @@ void client_thread() {
   bool srv = false;
   bool clnt = false;
   while (true) {
-    client_service->run();
+    client_service->run_one();
     srv = server_received.load() > maxSends;
     clnt = client_sended.load() > maxSends;
     if (srv && clnt) {
@@ -114,14 +114,16 @@ public:
       dqueue::logger("benchmark_client #", dqueue::Client::getId(), " subscribe to ",
                      qname);
       subscribe(sp, this, dqueue::OperationType::Async);
-      publish(dqueue::PublishParams(qname, "client"), {1});
+      publish(dqueue::PublishParams(qname, "client"), {1}, dqueue::OperationType::Async);
     }
   }
 
   void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
                dqueue::Id) override {
-    if (messagesInPool() < size_t(5)) {
-      publish(dqueue::PublishParams(info.queueName, "client"), d);
+    // if (messagesInPool() < size_t(5))
+    {
+      publish(dqueue::PublishParams(info.queueName, "client"), d,
+              dqueue::OperationType::Async);
       client_sended.fetch_add(1);
     }
   }

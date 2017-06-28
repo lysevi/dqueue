@@ -71,7 +71,8 @@ public:
                          const OperationType ot = OperationType::Sync) = 0;
   virtual void unsubscribe(const std::string &qname,
                            const OperationType ot = OperationType::Sync) = 0;
-  virtual void publish(const PublishParams &settings, const rawData &data) = 0;
+  virtual void publish(const PublishParams &settings, const rawData &data,
+                       const OperationType ot = OperationType::Sync) = 0;
 
 protected:
   void addHandler(const SubscriptionParams &settings, EventConsumer *handler) {

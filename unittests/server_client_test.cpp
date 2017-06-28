@@ -182,7 +182,7 @@ TEST_CASE("server.client.create_queue") {
 
   server->subscribe(SubscriptionParams(qname), &serverConsumer);
 
-  client->publish(PublishParams(qname), test_data);
+  client->publish(PublishParams(qname), test_data, OperationType::Sync);
   while (sended != int(3) && client->messagesInPool() != size_t(0)) {
     logger("server.client.create_queue !sended");
   }
@@ -365,7 +365,7 @@ TEST_CASE("server.client.publish-from-pool") {
   auto client2 = std::make_shared<Client>(
       service, AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
-  client2->publish(PublishParams(qname), {1, 2, 3});
+  client2->publish(PublishParams(qname), {1, 2, 3}, OperationType::Async);
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
 
@@ -420,7 +420,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
   EXPECT_TRUE(client2->is_connected());
   client2->subscribe(SubscriptionParams(qname), &client2Consumer);
 
-  client2->publish(PublishParams(qname, "tag1"), {1, 2, 3});
+  client2->publish(PublishParams(qname, "tag1"), {1, 2, 3}, OperationType::Sync);
 
   // receiver is client1 as subscriber to tag1, and client2
   while (sended != 2 || client2->messagesInPool() != 0) {
@@ -429,7 +429,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
   sended = 0;
   EXPECT_EQ(ids.size(), size_t(2));
   ids.clear();
-  client1->publish(PublishParams(qname), {1, 2, 3});
+  client1->publish(PublishParams(qname), {1, 2, 3}, OperationType::Sync);
 
   while (sended != 1 ||
          client1->messagesInPool() != 0) { // receiver is client2 as subscriber to 'all'
@@ -439,7 +439,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
   ids.clear();
   sended = 0;
   client2->subscribe(SubscriptionParams(qname, "tag2"), &client2Consumer);
-  client1->publish(PublishParams(qname, "tag2"), {1, 2, 3});
+  client1->publish(PublishParams(qname, "tag2"), {1, 2, 3}, OperationType::Sync);
 
   while (sended != 1 ||
          client1->messagesInPool() != 0) { // receiver is client2 as subscriber to tag2

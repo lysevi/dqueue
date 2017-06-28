@@ -60,8 +60,9 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
       std::lock_guard<std::shared_mutex> lg(_locker);
       auto it = _queries.find(cs.id);
       if (it == _queries.end()) {
-        _messagePool->erase(cs.id);
+        THROW_EXCEPTION("unknow _query id=", cs.id);
       } else {
+        _messagePool->erase(cs.id);
         it->second.locker->unlock();
         _queries.erase(it);
       }
@@ -103,7 +104,7 @@ Id Client::getId() const {
 }
 
 void Client::createQueue(const QueueSettings &settings, const OperationType ot) {
-  QueryResult qr;
+  AsyncOperationResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
     auto msgId = getNextId();
@@ -119,7 +120,7 @@ void Client::createQueue(const QueueSettings &settings, const OperationType ot) 
 
 void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler,
                        const OperationType ot) {
-  QueryResult qr;
+  AsyncOperationResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
     logger_info("client (", _params.login, "): subscribe ", settings.queueName);
@@ -138,7 +139,7 @@ void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handle
 }
 
 void Client::unsubscribe(const std::string &qname, const OperationType ot) {
-  QueryResult qr;
+  AsyncOperationResult qr;
   {
     std::lock_guard<std::shared_mutex> lg(_locker);
     logger_info("client (", _params.login, "): unsubscribe ", qname);
@@ -157,12 +158,20 @@ void Client::unsubscribe(const std::string &qname, const OperationType ot) {
   }
 }
 
-void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data) {
-  std::lock_guard<std::shared_mutex> lg(_locker);
-  queries::Publish pb(settings, data, getNextId());
-  _messagePool->append(pb);
-
-  publish_inner(pb);
+void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data,
+                     const OperationType ot) {
+  AsyncOperationResult qr;
+  {
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    auto msgId = getNextId();
+    queries::Publish pb(settings, data, msgId);
+    _messagePool->append(pb);
+    qr = makeNewQResult(msgId);
+    publish_inner(pb);
+  }
+  if (ot == OperationType::Sync) {
+    qr.locker->lock();
+  }
 }
 
 void Client::publish_inner(const queries::Publish &pb) {

@@ -34,7 +34,8 @@ public:
                         const OperationType ot = OperationType::Sync) override;
   EXPORT void unsubscribe(const std::string &qname,
                           const OperationType ot = OperationType::Sync) override;
-  EXPORT void publish(const PublishParams &settings, const rawData &data) override;
+  EXPORT void publish(const PublishParams &settings, const rawData &data,
+                      const OperationType ot = OperationType::Sync) override;
 
 private:
   void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;

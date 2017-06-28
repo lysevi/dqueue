@@ -16,6 +16,15 @@
 
 namespace dqueue {
 
+struct AsyncOperationResult {
+  std::shared_ptr<utils::async::locker> locker;
+  static AsyncOperationResult makeNew() {
+    AsyncOperationResult result;
+    result.locker = std::make_shared<utils::async::locker>();
+    return result;
+  }
+};
+
 class Client : public AbstractClient, public IQueueClient, public utils::non_copy {
 public:
   Client() = delete;
@@ -44,27 +53,18 @@ public:
                         const OperationType ot = OperationType::Sync) override;
   EXPORT void unsubscribe(const std::string &qname,
                           const OperationType ot = OperationType::Sync) override;
-  EXPORT void publish(const PublishParams &settings,
-                      const std::vector<uint8_t> &data) override;
+  EXPORT void publish(const PublishParams &settings, const std::vector<uint8_t> &data,
+                      const OperationType ot = OperationType::Sync) override;
 
 private:
-  struct QueryResult {
-    std::shared_ptr<utils::async::locker> locker;
-    static QueryResult makeNew() {
-      QueryResult result;
-      result.locker = std::make_shared<utils::async::locker>();
-      return result;
-    }
-  };
-
   EXPORT void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) override;
   void publish_inner(const queries::Publish &pb);
   void send(const NetworkMessage_ptr &nd);
 
   uint64_t getNextId() { return _nextMessageId++; }
 
-  QueryResult makeNewQResult(uint64_t msgId) {
-    auto qr = QueryResult::makeNew();
+  AsyncOperationResult makeNewQResult(uint64_t msgId) {
+    auto qr = AsyncOperationResult::makeNew();
     _queries[msgId] = qr;
     qr.locker->lock();
     return qr;
@@ -76,6 +76,6 @@ protected:
   MessagePool_Ptr _messagePool;
   bool _loginConfirmed = false;
   Id _id;
-  std::map<uint64_t, QueryResult> _queries;
+  std::map<uint64_t, AsyncOperationResult> _queries;
 };
 } // namespace dqueue

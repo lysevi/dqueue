@@ -100,7 +100,7 @@ void AbstractServer::handle_accept(std::shared_ptr<AbstractServer> self, socket_
         err == boost::asio::error::connection_reset || err == boost::asio::error::eof) {
       return;
     } else {
-      THROW_EXCEPTION("dariadb::server: error on accept - ", err.message());
+      THROW_EXCEPTION("dqueue::server: error on accept - ", err.message());
     }
   } else {
     ENSURE(!self->_is_stoped);

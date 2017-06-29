@@ -5,7 +5,7 @@ add_executable(benchmark_echo_queue echo_queue.cpp)
 TARGET_LINK_LIBRARIES(benchmark_echo_queue ${DQUEUE_LIBS})
 set_target_properties(benchmark_echo_queue PROPERTIES FOLDER Benchmarks)
 
-add_test(benchmark_echo_queue ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/benchmark_echo_queue -Q 1 --clients=2 -D)
+add_test(benchmark_echo_queue ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/benchmark_echo_queue -Q 1 --clients=2)
 
 MESSAGE(STATUS "-- connection")
 add_executable(connection_test connection_test.cpp)

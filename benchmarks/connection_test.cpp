@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include <thread>
+#include <list>
 
 using namespace std::placeholders;
 using namespace boost::asio;
@@ -56,8 +57,8 @@ int main(int argc, char *argv[]) {
   tcp::resolver::iterator iter = resolver.resolve(query);
 
   for (; iter != tcp::resolver::iterator(); ++iter) {
-    auto ep = iter->endpoint();
-    if (ep.protocol() == tcp::v4()) {
+    auto localep = iter->endpoint();
+    if (localep.protocol() == tcp::v4()) {
       break;
     }
   }

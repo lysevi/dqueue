@@ -35,9 +35,6 @@ struct testable_client : public AbstractClient {
     this->_async_connection->send(nd);
   }
 
-  bool success = false;
-  void onMessageSended(const NetworkMessage_ptr &) override { success = true; }
-
   virtual void onNetworkError(const NetworkMessage_ptr &,
                               const boost::system::error_code &) override {}
 
@@ -81,11 +78,7 @@ struct testable_server : public AbstractServer {
       : AbstractServer(service, p) {}
 
   virtual ~testable_server() { logger("stop testable server"); }
-  bool success = false;
-  void onMessageSended(AbstractServer::ClientConnection_Ptr,
-                       const NetworkMessage_ptr &) override {
-    success = true;
-  }
+  void onStartComplete() override {}
 
   void onNewMessage(AbstractServer::ClientConnection_Ptr ClientConnection,
                     const NetworkMessage_ptr &d, bool &) override {
@@ -178,7 +171,6 @@ void testForReconnection(const size_t clients_count) {
       service.poll_one();
     }
   }
-  EXPECT_TRUE(abstract_server->success);
   EXPECT_EQ(abstract_server.get()->connections.size(), clients_count);
   server_stop = true;
   while (abstract_server != nullptr) {
@@ -187,7 +179,6 @@ void testForReconnection(const size_t clients_count) {
   t.join();
 
   for (auto &c : clients) {
-    EXPECT_TRUE(c->success);
     while (c->is_connected()) {
       logger("testForReconnection. client is still connected");
       service.poll_one();

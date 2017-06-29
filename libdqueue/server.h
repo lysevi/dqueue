@@ -27,6 +27,7 @@ public:
   EXPORT std::vector<Node::QueueDescription> getDescription() const;
   EXPORT std::vector<User> users() const;
 
+  EXPORT void onStartComplete() override;
   EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) override;
   EXPORT void createQueue(const QueueSettings &settings,
                           const OperationType ot = OperationType::Sync) override;
@@ -37,15 +38,16 @@ public:
   EXPORT void publish(const PublishParams &settings, const rawData &data,
                       const OperationType ot = OperationType::Sync) override;
 
-private:
-  void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) override;
-  void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
-                      const boost::system::error_code &err) override;
+  EXPORT void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
+                             const boost::system::error_code &err) override;
+  EXPORT void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
+                           bool &cancel) override;
+  EXPORT void onDisconnect(const AbstractServer::ClientConnection_Ptr &i) override;
+
+protected:
   void onSendToClient(const PublishParams &info, const rawData &rd, Id id);
-  void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d, bool &cancel);
 
   void sendOk(ClientConnection_Ptr i, uint64_t messageId);
-  void onDisconnect(const AbstractServer::ClientConnection_Ptr &i) override;
 
 protected:
   std::mutex _locker;

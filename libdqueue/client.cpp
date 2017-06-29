@@ -41,8 +41,6 @@ void Client::onConnect() {
   logger("client(", _params.login, "):: send login sended.");
 }
 
-void Client::onMessageSended(const NetworkMessage_ptr &d) {}
-
 void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   auto hdr = d->cast_to_header();
 

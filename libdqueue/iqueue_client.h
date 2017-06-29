@@ -32,6 +32,7 @@ private:
 
 class LambdaEventConsumer : public EventConsumer {
 public:
+  LambdaEventConsumer() = default;
   LambdaEventConsumer(DataHandler dh) { _handler = dh; }
   void consume(const PublishParams &info, const rawData &d, Id id_) override {
     _handler(info, d, id_);

@@ -30,18 +30,58 @@ public:
 bool BenchmarkLogger::verbose = false;
 bool run_server = true;
 size_t clients_count = 1;
-size_t server_threads = 2;
 size_t queue_count = 1;
 int maxSends = 100000;
-std::shared_ptr<dqueue::Server> server;
+
 std::unique_ptr<boost::asio::io_service> server_service;
-std::unique_ptr<boost::asio::io_service> client_service;
 
 static std::atomic_int server_received;
 static std::atomic_int client_sended;
 bool show_info_stop = false;
 
+class BenchmarkServer : public virtual dqueue::Server {
+public:
+  BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::params p)
+      : dqueue::Server(service, p) {
+    dqueue::DataHandler server_handler = [this](const dqueue::PublishParams &info,
+                                                const dqueue::rawData &d, dqueue::Id) {
+      this->publish(dqueue::PublishParams(info.queueName, "server"), d);
+      server_received.fetch_add(1);
+    };
+
+    serverConsumer = dqueue::LambdaEventConsumer(server_handler);
+  }
+
+  void queueHandler(const dqueue::PublishParams &info, const dqueue::rawData &d,
+                    dqueue::Id) {
+    publish(dqueue::PublishParams(info.queueName, "server"), d);
+    server_received.fetch_add(1);
+  }
+
+  void onStartComplete() override {
+    dqueue::Server::onStartComplete();
+
+    for (size_t i = 0; i < queue_count; ++i) {
+      dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
+      createQueue(qs);
+      dqueue::SubscriptionParams sp(qs.name, "client");
+      subscribe(sp, &serverConsumer);
+    }
+  }
+  dqueue::LambdaEventConsumer serverConsumer;
+};
+
+std::shared_ptr<BenchmarkServer> server;
+
 void server_thread() {
+  dqueue::AbstractServer::params p;
+  p.port = 4040;
+
+  server_service = std::make_unique<boost::asio::io_service>();
+
+  server = std::make_shared<BenchmarkServer>(server_service.get(), p);
+  server->serverStart();
+
   bool srv = false;
   bool clnt = false;
   while (true) {
@@ -54,7 +94,40 @@ void server_thread() {
   }
 }
 
-void client_thread() {
+class BenchmarkClient : public dqueue::Client, public dqueue::EventConsumer {
+public:
+  BenchmarkClient() = delete;
+  BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)
+      : dqueue::Client(service, _params) {}
+
+  void onConnect() override {
+    dqueue::logger("benchmark_client #", dqueue::Client::getId(), " connected.");
+    dqueue::Client::onConnect();
+    for (size_t j = 0; j < queue_count; ++j) {
+      auto qname = "serverQ_" + std::to_string(j);
+      dqueue::SubscriptionParams sp(qname, "server");
+      dqueue::logger("benchmark_client #", dqueue::Client::getId(), " subscribe to ",
+                     qname);
+      subscribe(sp, this, dqueue::OperationType::Async);
+      publish(dqueue::PublishParams(qname, "client"), {1}, dqueue::OperationType::Async);
+    }
+  }
+
+  void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
+               dqueue::Id) override {
+    // if (messagesInPool() < size_t(5))
+    {
+      publish(dqueue::PublishParams(info.queueName, "client"), d,
+              dqueue::OperationType::Async);
+      client_sended.fetch_add(1);
+    }
+  }
+};
+
+void client_thread(std::shared_ptr<boost::asio::io_service> client_service,
+                   std::shared_ptr<BenchmarkClient> client) {
+  dqueue::logger_info("client ", client->getParams().login, " start connection");
+  client->async_connect();
   bool srv = false;
   bool clnt = false;
   while (true) {
@@ -99,36 +172,6 @@ void show_info_thread() {
   }
 }
 
-class BenchmarkClient : public dqueue::Client, public dqueue::EventConsumer {
-public:
-  BenchmarkClient() = delete;
-  BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)
-      : dqueue::Client(service, _params) {}
-
-  void onConnect() override {
-    dqueue::logger("benchmark_client #", dqueue::Client::getId(), " connected.");
-    dqueue::Client::onConnect();
-    for (size_t j = 0; j < queue_count; ++j) {
-      auto qname = "serverQ_" + std::to_string(j);
-      dqueue::SubscriptionParams sp(qname, "server");
-      dqueue::logger("benchmark_client #", dqueue::Client::getId(), " subscribe to ",
-                     qname);
-      subscribe(sp, this, dqueue::OperationType::Async);
-      publish(dqueue::PublishParams(qname, "client"), {1}, dqueue::OperationType::Async);
-    }
-  }
-
-  void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
-               dqueue::Id) override {
-    // if (messagesInPool() < size_t(5))
-    {
-      publish(dqueue::PublishParams(info.queueName, "client"), d,
-              dqueue::OperationType::Async);
-      client_sended.fetch_add(1);
-    }
-  }
-};
-
 int main(int argc, char *argv[]) {
   auto logger = dqueue::utils::ILogger_ptr{new BenchmarkLogger};
   dqueue::utils::LogManager::start(logger);
@@ -139,8 +182,7 @@ int main(int argc, char *argv[]) {
   opts("help", "Print help");
   opts("D,debug", "Enable debugging.", cxxopts::value<bool>(BenchmarkLogger::verbose));
   opts("Q,queues", "queues count.", cxxopts::value<size_t>(queue_count));
-  opts("S,server-threads", "queues count.", cxxopts::value<size_t>(server_threads));
-  opts("dont-run-server", "run server.");
+  opts("dont-run-server", "dont run server.");
   opts("clients", "clients", cxxopts::value<size_t>(clients_count));
   opts("maxSends", "maximum sends", cxxopts::value<int>(maxSends));
 
@@ -153,52 +195,30 @@ int main(int argc, char *argv[]) {
   if (options.count("dont-run-server")) {
     run_server = false;
   }
-  server_service = std::make_unique<boost::asio::io_service>();
-  client_service = std::make_unique<boost::asio::io_service>();
+
   std::thread show_thread;
 
   std::list<std::thread> threads;
 
-  dqueue::AbstractServer::params p;
-  p.port = 4040;
-  dqueue::DataHandler server_handler = [](const dqueue::PublishParams &info,
-                                          const dqueue::rawData &d, dqueue::Id) {
-    server->publish(dqueue::PublishParams(info.queueName, "server"), d);
-    server_received.fetch_add(1);
-  };
-
-  dqueue::LambdaEventConsumer serverConsumer(server_handler);
   if (run_server) {
-    for (size_t i = 0; i < server_threads; ++i) {
-      dqueue::logger("start thread #", i);
-      threads.emplace_back(&server_thread);
+    threads.emplace_back(&server_thread);
+
+    while (server == nullptr || !server->is_started()) {
+      dqueue::logger("wait server...");
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-
-    server = std::make_shared<dqueue::Server>(server_service.get(), p);
-    server->serverStart();
-
-    for (size_t i = 0; i < queue_count; ++i) {
-      dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
-      server->createQueue(qs);
-      dqueue::SubscriptionParams sp(qs.name, "client");
-      server->subscribe(sp, &serverConsumer);
-    }
-  }
-
-  for (size_t i = 0; i < clients_count; ++i) {
-    dqueue::logger("start client thread #", i);
-    threads.emplace_back(&client_thread);
   }
 
   std::list<std::shared_ptr<BenchmarkClient>> clients;
 
   for (size_t i = 0; i < clients_count; ++i) {
+    dqueue::logger("start client thread #", i);
     dqueue::AbstractClient::Params client_param("client-" + std::to_string(i),
                                                 "localhost", 4040);
+    std::shared_ptr<boost::asio::io_service> client_service(new boost::asio::io_service);
     auto cl = std::make_shared<BenchmarkClient>(client_service.get(), client_param);
-    dqueue::logger_info("client ", i, " start connection");
-    cl->async_connect();
     clients.push_back(cl);
+    threads.emplace_back(&client_thread, client_service, cl);
   }
 
   show_thread = std::move(std::thread{show_info_thread});

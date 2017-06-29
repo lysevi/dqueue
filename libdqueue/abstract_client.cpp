@@ -59,10 +59,7 @@ void AbstractClient::async_connect() {
         self->reconnectOnError(d, err);
       };
 
-      AsyncIO::onNetworkSuccessSendHandler on_s = [self](auto d) {
-        self->onMessageSended(d);
-      };
-      self->_async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
+      self->_async_connection = std::make_shared<AsyncIO>(on_d, on_n);
       self->_async_connection->start(self->_socket);
       self->isConnected = true;
       self->onConnect();

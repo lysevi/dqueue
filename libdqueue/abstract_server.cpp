@@ -26,11 +26,7 @@ void AbstractServer::ClientConnection::start() {
     self->close();
   };
 
-  AsyncIO::onNetworkSuccessSendHandler on_s = [self](auto d) {
-    self->onMessageSended(d);
-  };
-
-  _async_connection = std::make_shared<AsyncIO>(on_d, on_n, on_s);
+  _async_connection = std::make_shared<AsyncIO>(on_d, on_n);
   _async_connection->start(sock);
 }
 
@@ -43,9 +39,7 @@ void AbstractServer::ClientConnection::close() {
   }
 }
 
-void AbstractServer::ClientConnection::onMessageSended(const NetworkMessage_ptr &d) {
-  this->_server->onMessageSended(this->shared_from_this(), d);
-}
+
 void AbstractServer::ClientConnection::onNetworkError(
     const NetworkMessage_ptr &d, const boost::system::error_code &err) {
   this->_server->onNetworkError(this->shared_from_this(), d, err);
@@ -76,6 +70,7 @@ void AbstractServer::serverStart() {
   auto new_socket = std::make_shared<boost::asio::ip::tcp::socket>(*_service);
   _acc = std::make_shared<boost::asio::ip::tcp::acceptor>(*_service, ep);
   start_accept(new_socket);
+  onStartComplete();
   _is_started = true;
 }
 

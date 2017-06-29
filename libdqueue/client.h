@@ -39,7 +39,6 @@ public:
   EXPORT size_t messagesInPool() const; // count dont sended messages.
 
   EXPORT void onConnect() override;
-  EXPORT void onMessageSended(const NetworkMessage_ptr &d) override;
 
   EXPORT void onNetworkError(const NetworkMessage_ptr &d,
                              const boost::system::error_code &err) override;

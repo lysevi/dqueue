@@ -23,8 +23,6 @@ Server::~Server() {
   _node->eraseClient(ServerID);
 }
 
-void Server::onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) {}
-
 void Server::onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                             const boost::system::error_code &err) {
   bool operation_aborted = err == boost::asio::error::operation_aborted;
@@ -100,6 +98,10 @@ void Server::onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
 void Server::sendOk(ClientConnection_Ptr i, uint64_t messageId) {
   auto nd = queries::Ok(messageId).toNetworkMessage();
   this->sendTo(i, nd);
+}
+
+void Server::onStartComplete() {
+  logger_info("server started.");
 }
 
 ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection_Ptr i) {

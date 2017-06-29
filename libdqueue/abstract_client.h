@@ -20,6 +20,8 @@ public:
     bool auto_reconnection = true;
   };
   AbstractClient() = delete;
+  Params getParams() const { return _params; }
+
   EXPORT AbstractClient(boost::asio::io_service *service, const Params &_parms);
   EXPORT virtual ~AbstractClient();
   EXPORT void disconnect();
@@ -29,7 +31,6 @@ public:
   EXPORT void dataRecv(const NetworkMessage_ptr &d, bool &cancel);
 
   virtual void onConnect() = 0;
-  virtual void onMessageSended(const NetworkMessage_ptr &d) = 0;
   virtual void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) = 0;
   virtual void onNetworkError(const NetworkMessage_ptr &d,
                               const boost::system::error_code &err) = 0;

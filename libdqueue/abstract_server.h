@@ -21,7 +21,6 @@ public:
     ~ClientConnection();
     void start();
     void close();
-    void onMessageSended(const NetworkMessage_ptr &d);
     void onNetworkError(const NetworkMessage_ptr &d,
                         const boost::system::error_code &err);
     void onDataRecv(const NetworkMessage_ptr &d, bool &cancel);
@@ -46,7 +45,8 @@ public:
   EXPORT void sendTo(ClientConnection_Ptr i, NetworkMessage_ptr &d);
   EXPORT void sendTo(Id id, NetworkMessage_ptr &d);
 
-  virtual void onMessageSended(ClientConnection_Ptr i, const NetworkMessage_ptr &d) = 0;
+  virtual void onStartComplete() = 0;
+
   virtual void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
                               const boost::system::error_code &err) = 0;
   virtual void onNewMessage(ClientConnection_Ptr i, const NetworkMessage_ptr &d,

@@ -14,6 +14,7 @@ option(DQUEUE_ENABLE_BENCHMARKS "Enable build benchmarks." ON)
 option(DQUEUE_ENABLE_DOUBLECHECKS "More checks in code." OFF)
 option(DQUEUE_ASAN_UBSAN "Enable address & undefined behavior sanitizer for binary." OFF)
 option(DQUEUE_MSAN "Enable memory sanitizer for binary." OFF)
+option(DQUEUE_ASIO_DEBUG "Enable asio debug flag." OFF)
 option(DQUEUE_SYSTEM_JEMALLOC "Use jemalloc installed in the system." ON)
 
 if((DQUEUE_ASAN_UBSAN AND DQUEUE_MSAN))
@@ -44,6 +45,11 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF) 
 
 set(BOOST_DEP system)
+
+IF(DQUEUE_ASIO_DEBUG)
+ add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
+ENDIF()
+
 
 IF(DQUEUE_ENABLE_DOUBLECHECKS)
  add_definitions(-DDOUBLE_CHECKS)

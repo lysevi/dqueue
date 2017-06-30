@@ -46,14 +46,14 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
 
   switch (hdr->kind) {
   case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
-    logger_info("client (", _params.login, "): recv publish");
+    logger("client (", _params.login, "): recv publish");
     auto cs = queries::Publish(d);
     this->callConsumer(cs.toPublishParams(), cs.data, _id);
     onMessage(cs.qname, cs.data);
     break;
   }
   case (NetworkMessage::message_kind)MessageKinds::OK: {
-    logger_info("client (", _params.login, "): recv ok");
+    logger("client (", _params.login, "): recv ok");
     auto cs = queries::Ok(d);
 
     {

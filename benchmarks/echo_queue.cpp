@@ -21,7 +21,7 @@ public:
       std::cout << "[inf] " << msg << std::endl;
       break;
     case dqueue::utils::LOG_MESSAGE_KIND::MESSAGE:
-      std::cout << "[dbg] " << msg << std::endl;
+      //std::cout << "[dbg] " << msg << std::endl;
       break;
     }
   }
@@ -39,18 +39,10 @@ static std::atomic_int server_received;
 static std::atomic_int client_sended;
 bool show_info_stop = false;
 
-class BenchmarkServer : public virtual dqueue::Server {
+class BenchmarkServer final: public virtual dqueue::Server, public dqueue::EventConsumer {
 public:
   BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::params p)
-      : dqueue::Server(service, p) {
-    dqueue::DataHandler server_handler = [this](const dqueue::PublishParams &info,
-                                                const dqueue::rawData &d, dqueue::Id) {
-      this->publish(dqueue::PublishParams(info.queueName, "server"), d);
-      server_received.fetch_add(1);
-    };
-
-    serverConsumer = dqueue::LambdaEventConsumer(server_handler);
-  }
+      : dqueue::Server(service, p) {}
 
   void queueHandler(const dqueue::PublishParams &info, const dqueue::rawData &d,
                     dqueue::Id) {
@@ -65,10 +57,15 @@ public:
       dqueue::QueueSettings qs("serverQ_" + std::to_string(i));
       createQueue(qs);
       dqueue::SubscriptionParams sp(qs.name, "client");
-      subscribe(sp, &serverConsumer);
+      subscribe(sp, this);
     }
   }
-  dqueue::LambdaEventConsumer serverConsumer;
+
+  void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
+               dqueue::Id) override {
+    this->publish(dqueue::PublishParams(info.queueName, "server"), d);
+    server_received.fetch_add(1);
+  }
 };
 
 std::shared_ptr<BenchmarkServer> server;
@@ -87,14 +84,14 @@ void server_thread() {
   while (true) {
     server_service->run_one();
     srv = server_received.load() > maxSends;
-    clnt = client_sended.load() > maxSends;
+    clnt = (client_sended.load() / clients_count) > maxSends;
     if (srv && clnt) {
       break;
     }
   }
 }
 
-class BenchmarkClient : public dqueue::Client, public dqueue::EventConsumer {
+class BenchmarkClient  final: public dqueue::Client, public dqueue::EventConsumer {
 public:
   BenchmarkClient() = delete;
   BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)
@@ -133,7 +130,7 @@ void client_thread(std::shared_ptr<boost::asio::io_service> client_service,
   while (true) {
     client_service->run_one();
     srv = server_received.load() > maxSends;
-    clnt = client_sended.load() > maxSends;
+    clnt = (client_sended.load() / clients_count) > maxSends;
     if (srv && clnt) {
       break;
     }

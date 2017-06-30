@@ -11,7 +11,7 @@ enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
 class AbstractServer : public std::enable_shared_from_this<AbstractServer> {
 public:
-  struct params {
+  struct Params {
     unsigned short port;
   };
 
@@ -35,7 +35,7 @@ public:
   };
   using ClientConnection_Ptr = std::shared_ptr<ClientConnection>;
 
-  EXPORT AbstractServer(boost::asio::io_service *service, params p);
+  EXPORT AbstractServer(boost::asio::io_service *service, Params p);
   EXPORT virtual ~AbstractServer();
   EXPORT void serverStart();
   EXPORT void stopServer();
@@ -66,7 +66,7 @@ protected:
   std::atomic_int _next_id;
   std::mutex _locker_connections;
   std::list<ClientConnection_Ptr> _connections;
-  params _params;
+  Params _params;
   bool _is_stoped = false;
 };
 } // namespace dqueue

@@ -56,7 +56,7 @@ void AbstractServer::ClientConnection::sendData(const NetworkMessage_ptr &d) {
 
 /////////////////////////////////////////////////////////////////
 
-AbstractServer::AbstractServer(boost::asio::io_service *service, AbstractServer::params p)
+AbstractServer::AbstractServer(boost::asio::io_service *service, AbstractServer::Params p)
     : _service(service), _params(p) {
   _next_id.store(0);
 }

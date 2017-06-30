@@ -22,7 +22,7 @@ bool server_stop = false;
 std::shared_ptr<Server> server = nullptr;
 boost::asio::io_service *service;
 void server_thread() {
-  AbstractServer::params p;
+  AbstractServer::Params p;
   p.port = 4040;
   service = new boost::asio::io_service();
   server = std::make_shared<Server>(service, p);

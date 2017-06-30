@@ -19,7 +19,7 @@ namespace dqueue {
 
 class Server : public AbstractServer, public utils::non_copy, public IQueueClient {
 public:
-  EXPORT Server(boost::asio::io_service *service, AbstractServer::params &p);
+  EXPORT Server(boost::asio::io_service *service, AbstractServer::Params &p);
   EXPORT virtual ~Server();
   /*EXPORT void serverStart();
   EXPORT void stopServer();

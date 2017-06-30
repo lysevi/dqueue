@@ -9,7 +9,7 @@
 
 using namespace dqueue;
 
-Server::Server(boost::asio::io_service *service, AbstractServer::params &p)
+Server::Server(boost::asio::io_service *service, AbstractServer::Params &p)
     : AbstractServer(service, p) {
   DataHandler dhandler = [this](const PublishParams &info, const rawData &rd, Id id) {
     this->onSendToClient(info, rd, id);

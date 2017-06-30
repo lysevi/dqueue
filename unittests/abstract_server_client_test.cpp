@@ -74,7 +74,7 @@ struct testable_server : public AbstractServer {
     return result && clientsCount == id2count.size();
   }
 
-  testable_server(io_service *service, const AbstractServer::params &p)
+  testable_server(io_service *service, const AbstractServer::Params &p)
       : AbstractServer(service, p) {}
 
   virtual ~testable_server() { logger("stop testable server"); }
@@ -124,7 +124,7 @@ std::shared_ptr<testable_server> abstract_server = nullptr;
 
 void server_thread() {
   boost::asio::io_service service;
-  AbstractServer::params p;
+  AbstractServer::Params p;
   p.port = 4040;
   abstract_server = std::make_shared<testable_server>(&service, p);
 
@@ -185,7 +185,7 @@ void testForReconnection(const size_t clients_count) {
     }
   }
 
-  // wait auto recconection on client.
+  // wait auto reconection on client.
   server_stop = false;
   t = std::thread(server_thread);
   for (auto &c : clients) {

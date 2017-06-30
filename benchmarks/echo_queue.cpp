@@ -41,7 +41,7 @@ bool show_info_stop = false;
 
 class BenchmarkServer final: public virtual dqueue::Server, public dqueue::EventConsumer {
 public:
-  BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::params p)
+  BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::Params p)
       : dqueue::Server(service, p) {}
 
   void queueHandler(const dqueue::PublishParams &info, const dqueue::rawData &d,
@@ -71,7 +71,7 @@ public:
 std::shared_ptr<BenchmarkServer> server;
 
 void server_thread() {
-  dqueue::AbstractServer::params p;
+  dqueue::AbstractServer::Params p;
   p.port = 4040;
 
   server_service = std::make_unique<boost::asio::io_service>();
@@ -84,7 +84,7 @@ void server_thread() {
   while (true) {
     server_service->run_one();
     srv = server_received.load() > maxSends;
-    clnt = (client_sended.load() / clients_count) > maxSends;
+    clnt = int(client_sended.load() / clients_count) > maxSends;
     if (srv && clnt) {
       break;
     }
@@ -130,7 +130,7 @@ void client_thread(std::shared_ptr<boost::asio::io_service> client_service,
   while (true) {
     client_service->run_one();
     srv = server_received.load() > maxSends;
-    clnt = (client_sended.load() / clients_count) > maxSends;
+    clnt = int(client_sended.load() / clients_count) > maxSends;
     if (srv && clnt) {
       break;
     }

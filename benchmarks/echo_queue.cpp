@@ -186,12 +186,18 @@ int main(int argc, char *argv[]) {
   opts("clients", "clients", cxxopts::value<size_t>(clients_count));
   opts("maxSends", "maximum sends", cxxopts::value<int>(maxSends));
 
-  options.parse(argc, argv);
+  try {
+    options.parse(argc, argv);
+  } catch (cxxopts::option_not_exists_exception &exx) {
+    std::cerr << "cmd line error: " << exx.what() << std::endl;
+    return 1;
+  }
 
   if (options.count("help")) {
     std::cout << options.help() << std::endl;
     std::exit(0);
   }
+
   if (options.count("dont-run-server")) {
     run_server = false;
   }

@@ -175,9 +175,16 @@ struct Node::Private {
     }
   }
 
-  // TODO rm 'author'. unused parameter.
   void publish(const PublishParams &pubParam, const rawData &rd, Id author) {
-    queueByName(pubParam.queueName);
+    User autorDescr;
+    if (!_clients->byId(author, autorDescr)) {
+      logger_fatal("server: #", author, " user does not exists.");
+    }
+    if (!queueIsExists(pubParam.queueName)) {
+      logger("server: client", autorDescr.login,
+             " publish to not exists queue:", pubParam.queueName);
+      return;
+    }
     std::map<Id, QueueListener> local_cpy;
 
     {

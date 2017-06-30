@@ -1,5 +1,5 @@
 #pragma once
-#include <regex>
+#include <libdqueue/re_cache.h>
 #include <string>
 
 namespace dqueue {
@@ -7,7 +7,7 @@ enum class SubscribeActions : uint8_t { Create, Subscribe, Unsubscribe };
 struct SubscriptionParams {
   std::string queueName;
   std::string tag;
-  SubscriptionParams() = default;
+  SubscriptionParams() {}
   SubscriptionParams(const std::string &queueName_) : queueName(queueName_) {}
   SubscriptionParams(const std::string &queueName_, const std::string &tag_)
       : queueName(queueName_), tag(tag_) {}
@@ -16,9 +16,8 @@ struct SubscriptionParams {
     if (tag.empty()) {
       return true;
     } else {
-      // TODO compile and save to cache!
-      std::regex tag_regex(tag);
-      return std::regex_match(tag_, tag_regex);
+      auto tag_regex = ReCache::instance()->compile(tag);
+      return std::regex_match(tag_, *tag_regex);
     }
   }
 };

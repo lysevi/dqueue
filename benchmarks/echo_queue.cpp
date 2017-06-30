@@ -21,7 +21,7 @@ public:
       std::cout << "[inf] " << msg << std::endl;
       break;
     case dqueue::utils::LOG_MESSAGE_KIND::MESSAGE:
-      //std::cout << "[dbg] " << msg << std::endl;
+      // std::cout << "[dbg] " << msg << std::endl;
       break;
     }
   }
@@ -39,7 +39,8 @@ static std::atomic_int server_received;
 static std::atomic_int client_sended;
 bool show_info_stop = false;
 
-class BenchmarkServer final: public virtual dqueue::Server, public dqueue::EventConsumer {
+class BenchmarkServer final : public virtual dqueue::Server,
+                              public dqueue::EventConsumer {
 public:
   BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::Params p)
       : dqueue::Server(service, p) {}
@@ -84,14 +85,16 @@ void server_thread() {
   while (true) {
     server_service->run_one();
     srv = server_received.load() > maxSends;
-    clnt = int(client_sended.load() / clients_count) > maxSends;
+    if (clients_count != 0) {
+      clnt = int(client_sended.load() / clients_count) > maxSends;
+    }
     if (srv && clnt) {
       break;
     }
   }
 }
 
-class BenchmarkClient  final: public dqueue::Client, public dqueue::EventConsumer {
+class BenchmarkClient final : public dqueue::Client, public dqueue::EventConsumer {
 public:
   BenchmarkClient() = delete;
   BenchmarkClient(boost::asio::io_service *service, const AbstractClient::Params &_params)

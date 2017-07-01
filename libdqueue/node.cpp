@@ -215,7 +215,6 @@ struct Node::Private {
 
   UserBase_Ptr _clients;
 
-  // TODO all dict is name2value. not id2value.
   mutable std::shared_mutex _queues_locker;
   std::map<std::string, Queue> _queues; // name to queue
   int nextQueueId;

@@ -7,6 +7,8 @@ using namespace dqueue::utils::async;
 std::shared_ptr<LogManager> LogManager::_instance = nullptr;
 dqueue::utils::async::locker LogManager::_locker;
 
+Verbose LogManager::verbose = Verbose::Debug;
+
 void LogManager::start(ILogger_ptr &logger) {
   if (_instance == nullptr) {
     _instance = std::shared_ptr<LogManager>{new LogManager(logger)};
@@ -41,6 +43,9 @@ void LogManager::message(LOG_MESSAGE_KIND kind, const std::string &msg) {
 }
 
 void ConsoleLogger::message(LOG_MESSAGE_KIND kind, const std::string &msg) {
+	if (LogManager::verbose == Verbose::Quiet) {
+		return;
+	}
   switch (kind) {
   case LOG_MESSAGE_KIND::FATAL:
     std::cerr << "[err] " << msg << std::endl;
@@ -49,7 +54,9 @@ void ConsoleLogger::message(LOG_MESSAGE_KIND kind, const std::string &msg) {
     std::cout << "[inf] " << msg << std::endl;
     break;
   case LOG_MESSAGE_KIND::MESSAGE:
-    std::cout << "[dbg] " << msg << std::endl;
+	  if (LogManager::verbose == Verbose::Debug) {
+		  std::cout << "[dbg] " << msg << std::endl;
+	  }
     break;
   }
 }

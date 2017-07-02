@@ -27,8 +27,15 @@ public:
   EXPORT void message(LOG_MESSAGE_KIND kind, const std::string &msg) override;
 };
 
+enum class Verbose {
+	Verbose,
+	Debug,
+	Quiet
+};
+
 class LogManager {
 public:
+	EXPORT static Verbose verbose;
   LogManager(ILogger_ptr &logger);
 
   EXPORT static void start(ILogger_ptr &logger);

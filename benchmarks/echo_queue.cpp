@@ -3,31 +3,7 @@
 #include <iostream>
 #include <unordered_map>
 
-class BenchmarkLogger : public dqueue::utils::ILogger {
-public:
-  static bool verbose;
-  BenchmarkLogger() {}
-  ~BenchmarkLogger() {}
-
-  void message(dqueue::utils::LOG_MESSAGE_KIND kind, const std::string &msg) {
-    if (!verbose) {
-      return;
-    }
-    switch (kind) {
-    case dqueue::utils::LOG_MESSAGE_KIND::FATAL:
-      std::cerr << "[err] " << msg << std::endl;
-      break;
-    case dqueue::utils::LOG_MESSAGE_KIND::INFO:
-      std::cout << "[inf] " << msg << std::endl;
-      break;
-    case dqueue::utils::LOG_MESSAGE_KIND::MESSAGE:
-      // std::cout << "[dbg] " << msg << std::endl;
-      break;
-    }
-  }
-};
-
-bool BenchmarkLogger::verbose = false;
+bool verbose = false;
 bool run_server = true;
 size_t clients_count = 1;
 size_t queue_count = 1;
@@ -173,14 +149,11 @@ void show_info_thread() {
 }
 
 int main(int argc, char *argv[]) {
-  auto logger = dqueue::utils::ILogger_ptr{new BenchmarkLogger};
-  dqueue::utils::LogManager::start(logger);
-
-  cxxopts::Options options("benchmark_sum", "benchmark for queue and many consumers");
+    cxxopts::Options options("benchmark_sum", "benchmark for queue and many consumers");
   options.positional_help("[optional args]");
   auto opts = options.add_options();
   opts("help", "Print help");
-  opts("D,debug", "Enable debugging.", cxxopts::value<bool>(BenchmarkLogger::verbose));
+  opts("D,debug", "Enable debugging.", cxxopts::value<bool>(verbose));
   opts("Q,queues", "queues count.", cxxopts::value<size_t>(queue_count));
   opts("dont-run-server", "dont run server.");
   opts("clients", "clients", cxxopts::value<size_t>(clients_count));
@@ -202,6 +175,12 @@ int main(int argc, char *argv[]) {
     run_server = false;
   }
 
+  if (!verbose) {
+	  dqueue::utils::LogManager::verbose = dqueue::utils::Verbose::Quiet;
+  }
+  else {
+	  dqueue::utils::LogManager::verbose = dqueue::utils::Verbose::Verbose;
+  }
   std::thread show_thread;
 
   std::list<std::thread> threads;

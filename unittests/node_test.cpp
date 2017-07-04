@@ -32,6 +32,8 @@ TEST_CASE("node.queue_subscription") {
   n.createQueue(QueueSettings("q1"), 1);
   n.createQueue(QueueSettings("q2"), 1);
   n.createQueue(QueueSettings("q3"), 2);
+  n.createQueue(QueueSettings("q3"), 3); //owner must be still 2
+
   auto descr = n.getQueuesDescription();
   EXPECT_EQ(descr.size(), size_t(3));
 

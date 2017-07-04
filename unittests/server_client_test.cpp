@@ -138,6 +138,7 @@ TEST_CASE("server.client.create_queue") {
   auto qname = "server.client.create_queue1";
   QueueSettings qsettings1(qname);
   client->createQueue(qsettings1);
+  client->createQueue(qsettings1);
 
   while (true) {
     auto ds = server->getDescription();

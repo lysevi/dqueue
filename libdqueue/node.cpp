@@ -29,16 +29,20 @@ struct Node::Private {
     if (!_clients->exists(ownerId)) {
       THROW_EXCEPTION("node: clientId=", ownerId, " does not exists");
     }
-
-    {
-      std::lock_guard<std::shared_mutex> lg(_queues_locker);
-
+	
+	std::lock_guard<std::shared_mutex> lg(_queues_locker);
+	auto it = _queues.find(qsettings.name);
+	if(it==_queues.end()){
       Queue new_q(qsettings);
       new_q.queueId = nextQueueId++;
       _queues.emplace(std::make_pair(new_q.settings.name, new_q));
-    }
-    SubscriptionParams ss(qsettings.name);
-    changeSubscription(SubscribeActions::Create, ss, ownerId);
+	  
+	  SubscriptionParams ss(qsettings.name);
+	  changeSubscription_impl(SubscribeActions::Create, ss, ownerId);
+	}
+	else {
+		it->second.settings= qsettings;
+	}    
   }
 
   std::vector<QueueDescription> getDescription() const {
@@ -97,7 +101,6 @@ struct Node::Private {
   }
 
   Queue queueById(int id) const {
-    std::shared_lock<std::shared_mutex> sl(_queues_locker);
     for (auto kv : _queues) {
       if (kv.second.queueId == id) {
         return kv.second;
@@ -107,7 +110,6 @@ struct Node::Private {
   }
 
   Queue queueByName(const std::string &name) const {
-    std::shared_lock<std::shared_mutex> sl(_queues_locker);
     auto it = _queues.find(name);
     if (it == _queues.end()) {
       THROW_EXCEPTION("queue with name=", name, " was not founded.");
@@ -116,12 +118,17 @@ struct Node::Private {
   }
 
   bool queueIsExists(const std::string &name) const {
-    std::shared_lock<std::shared_mutex> sl(_queues_locker);
     auto it = _queues.find(name);
     return (it != _queues.end());
   }
 
   void changeSubscription(SubscribeActions action, const SubscriptionParams &settings,
+	  Id clientId) {
+	  std::lock_guard<std::shared_mutex> sl(_queues_locker);
+	  changeSubscription_impl(action, settings, clientId);
+  }
+
+  void changeSubscription_impl(SubscribeActions action, const SubscriptionParams &settings,
                           Id clientId) {
     logger_info("node: changeSubscription:", settings.queueName, ",  id=#", clientId);
 

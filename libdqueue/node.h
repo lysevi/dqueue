@@ -36,7 +36,7 @@ public:
 
   EXPORT void changeSubscription(SubscribeActions action, const SubscriptionParams &settings, Id clientId);
 
-  EXPORT void publish(const PublishParams &settings, const rawData &rd, Id author);
+  EXPORT void publish(const PublishParams &settings, const std::vector<uint8_t> &rd, Id author);
 
 protected:
   struct Private;

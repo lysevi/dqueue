@@ -11,7 +11,7 @@ using namespace dqueue;
 
 Server::Server(boost::asio::io_service *service, AbstractServer::Params &p)
     : AbstractServer(service, p) {
-  DataHandler dhandler = [this](const PublishParams &info, const rawData &rd, Id id) {
+  DataHandler dhandler = [this](const PublishParams &info, const std::vector<uint8_t> &rd, Id id) {
     this->onSendToClient(info, rd, id);
   };
   _users = UserBase::create();
@@ -33,7 +33,7 @@ void Server::onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   }
 }
 
-void Server::onSendToClient(const PublishParams &info, const rawData &rd, Id id) {
+void Server::onSendToClient(const PublishParams &info, const std::vector<uint8_t> &rd, Id id) {
   if (id == ServerID) {
     this->callConsumer(info, rd, id);
   } else {
@@ -141,7 +141,7 @@ void Server::unsubscribe(const std::string &qname, const OperationType) {
   _node->changeSubscription(SubscribeActions::Subscribe, ss, ServerID);
 }
 
-void Server::publish(const PublishParams &settings, const rawData &data,
+void Server::publish(const PublishParams &settings, const std::vector<uint8_t> &data,
                      const OperationType ot) {
   logger_info("server: publish to ", settings.queueName);
   _node->publish(settings, data, ServerID);

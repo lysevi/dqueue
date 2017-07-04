@@ -44,7 +44,7 @@ public:
                              const boost::system::error_code &err) override;
 
   EXPORT virtual void onMessage(const std::string & /*queueName*/,
-                                const rawData & /*d*/){};
+                                const std::vector<uint8_t> & /*d*/){};
 
   EXPORT void createQueue(const QueueSettings &settings,
                           const OperationType ot = OperationType::Sync) override;

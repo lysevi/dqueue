@@ -12,10 +12,8 @@
 #include <unordered_map>
 #include <utility>
 namespace dqueue {
-using rawData = std::vector<uint8_t>;
-// TODO Id must be std::vector<Id> for speedup and less memory allocations.
 using DataHandler =
-    std::function<void(const PublishParams &info, const rawData &d, Id id)>;
+    std::function<void(const PublishParams &info, const std::vector<uint8_t> &d, Id id)>;
 
 class EventConsumer {
 public:
@@ -24,7 +22,7 @@ public:
   void setId(Id id_) { _consumerId = id_; }
   Id getId() const { return _consumerId; }
 
-  virtual void consume(const PublishParams &info, const rawData &d, Id id) = 0;
+  virtual void consume(const PublishParams &info, const std::vector<uint8_t> &d, Id id) = 0;
 
 private:
   Id _consumerId;
@@ -34,7 +32,7 @@ class LambdaEventConsumer : public EventConsumer {
 public:
   LambdaEventConsumer() = default;
   LambdaEventConsumer(DataHandler dh) { _handler = dh; }
-  void consume(const PublishParams &info, const rawData &d, Id id_) override {
+  void consume(const PublishParams &info, const std::vector<uint8_t> &d, Id id_) override {
     _handler(info, d, id_);
   }
 
@@ -53,7 +51,7 @@ public:
     _eventHandlers.erase(handler->getId());
   }
 
-  void callConsumer(const PublishParams &info, const rawData &d, Id id) {
+  void callConsumer(const PublishParams &info, const std::vector<uint8_t> &d, Id id) {
     std::shared_lock<std::shared_mutex> lg(_eventHandlers_locker);
     auto it = _queue2handler.find(info.queueName);
     if (it != _queue2handler.end()) {
@@ -72,7 +70,7 @@ public:
                          const OperationType ot = OperationType::Sync) = 0;
   virtual void unsubscribe(const std::string &qname,
                            const OperationType ot = OperationType::Sync) = 0;
-  virtual void publish(const PublishParams &settings, const rawData &data,
+  virtual void publish(const PublishParams &settings, const std::vector<uint8_t> &data,
                        const OperationType ot = OperationType::Sync) = 0;
 
 protected:

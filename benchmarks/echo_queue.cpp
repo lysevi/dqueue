@@ -21,7 +21,7 @@ public:
   BenchmarkServer(boost::asio::io_service *service, dqueue::AbstractServer::Params p)
       : dqueue::Server(service, p) {}
 
-  void queueHandler(const dqueue::PublishParams &info, const dqueue::rawData &d,
+  void queueHandler(const dqueue::PublishParams &info, const std::vector<uint8_t> &d,
                     dqueue::Id) {
     publish(dqueue::PublishParams(info.queueName, "server"), d);
     server_received.fetch_add(1);
@@ -38,7 +38,7 @@ public:
     }
   }
 
-  void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
+  void consume(const dqueue::PublishParams &info, const std::vector<uint8_t> &d,
                dqueue::Id) override {
     this->publish(dqueue::PublishParams(info.queueName, "server"), d);
     server_received.fetch_add(1);
@@ -89,7 +89,7 @@ public:
     }
   }
 
-  void consume(const dqueue::PublishParams &info, const dqueue::rawData &d,
+  void consume(const dqueue::PublishParams &info, const std::vector<uint8_t> &d,
                dqueue::Id) override {
     // if (messagesInPool() < size_t(5))
     {

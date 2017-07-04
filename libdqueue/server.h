@@ -35,7 +35,7 @@ public:
                         const OperationType ot = OperationType::Sync) override;
   EXPORT void unsubscribe(const std::string &qname,
                           const OperationType ot = OperationType::Sync) override;
-  EXPORT void publish(const PublishParams &settings, const rawData &data,
+  EXPORT void publish(const PublishParams &settings, const std::vector<uint8_t> &data,
                       const OperationType ot = OperationType::Sync) override;
 
   EXPORT void onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
@@ -45,7 +45,7 @@ public:
   EXPORT void onDisconnect(const AbstractServer::ClientConnection_Ptr &i) override;
 
 protected:
-  void onSendToClient(const PublishParams &info, const rawData &rd, Id id);
+  void onSendToClient(const PublishParams &info, const std::vector<uint8_t> &rd, Id id);
 
   void sendOk(ClientConnection_Ptr i, uint64_t messageId);
 

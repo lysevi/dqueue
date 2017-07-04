@@ -10,7 +10,7 @@ TEST_CASE("node.queue_subscription") {
   std::string tag = "tag1";
   std::set<Id> sends;
 
-  DataHandler dhandler = [&sends, tag](const PublishParams &info, const rawData &, Id id) {
+  DataHandler dhandler = [&sends, tag](const PublishParams &info, const std::vector<uint8_t> &, Id id) {
     EXPECT_TRUE(!info.queueName.empty());
     if (info.queueName == "q2" && id == 1) {
       EXPECT_EQ(info.tag, tag);
@@ -58,19 +58,19 @@ TEST_CASE("node.queue_subscription") {
     }
   }
 
-  n.publish(PublishParams("q1", tag), rawData(1), 2); //author must be not in result
+  n.publish(PublishParams("q1", tag), std::vector<uint8_t>(1), 2); //author must be not in result
   EXPECT_EQ(sends.size(), size_t(1));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
 
   sends.clear();
 
-  n.publish(PublishParams("q2", tag), rawData(1), 3);
+  n.publish(PublishParams("q2", tag), std::vector<uint8_t>(1), 3);
   EXPECT_EQ(sends.size(), size_t(1));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) != sends.end());
 
   sends.clear();
 
-  n.publish(PublishParams("q3"), rawData(3), 1);
+  n.publish(PublishParams("q3"), std::vector<uint8_t>(3), 1);
   EXPECT_EQ(sends.size(), size_t(2));
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 1) == sends.end());
   EXPECT_TRUE(std::find(sends.begin(), sends.end(), 2) != sends.end());

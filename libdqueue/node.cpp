@@ -175,7 +175,7 @@ struct Node::Private {
     }
   }
 
-  void publish(const PublishParams &pubParam, const rawData &rd, Id author) {
+  void publish(const PublishParams &pubParam, const std::vector<uint8_t> &rd, Id author) {
     User autorDescr;
     if (!_clients->byId(author, autorDescr)) {
       logger_fatal("server: #", author, " user does not exists.");
@@ -250,6 +250,6 @@ void Node::changeSubscription(SubscribeActions action, const SubscriptionParams 
   return _impl->changeSubscription(action, settings, clientId);
 }
 
-void Node::publish(const PublishParams &settings, const rawData &rd, Id author) {
+void Node::publish(const PublishParams &settings, const std::vector<uint8_t> &rd, Id author) {
   return _impl->publish(settings, rd, author);
 }

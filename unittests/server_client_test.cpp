@@ -151,7 +151,7 @@ TEST_CASE("server.client.create_queue") {
   auto test_data = std::vector<uint8_t>{0, 1, 2, 3, 4, 5, 6};
   int sended = 0;
   DataHandler handler = [&test_data, &sended, &qname](const PublishParams &info,
-                                                      const rawData &d, Id) {
+                                                      const std::vector<uint8_t> &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
     sended++;
@@ -172,7 +172,7 @@ TEST_CASE("server.client.create_queue") {
   }
 
   DataHandler server_handler = [&test_data, &sended, &qname](const PublishParams &info,
-                                                             const rawData &d, Id) {
+                                                             const std::vector<uint8_t> &d, Id) {
     EXPECT_TRUE(std::equal(test_data.begin(), test_data.end(), d.begin(), d.end()));
     EXPECT_EQ(info.queueName, qname);
     sended++;
@@ -354,7 +354,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client->createQueue(qsettings1);
 
   int sended = 0;
-  DataHandler handler = [&sended, &qname](const PublishParams &info, const rawData &,
+  DataHandler handler = [&sended, &qname](const PublishParams &info, const std::vector<uint8_t> &,
                                           Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;
@@ -402,7 +402,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
 
   int sended = 0;
   std::set<Id> ids;
-  auto handler = [&sended, &qname, &ids](const PublishParams &info, const rawData &,
+  auto handler = [&sended, &qname, &ids](const PublishParams &info, const std::vector<uint8_t> &,
                                          Id id) {
     EXPECT_EQ(info.queueName, qname);
     sended++;

@@ -35,6 +35,8 @@ public:
   EXPORT void connectAsync();
   EXPORT void disconnect();
   EXPORT bool is_connected();
+
+  EXPORT void waitAll()const;   
   EXPORT Id getId() const;
   EXPORT size_t messagesInPool() const; // count dont sended messages.
 

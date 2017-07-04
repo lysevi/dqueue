@@ -99,6 +99,18 @@ size_t Client::messagesInPool() const {
   return _messagePool->size();
 }
 
+void Client::waitAll() const {
+	while (true) {
+		if (_messagePool->size() == size_t(0)) {
+			std::lock_guard<std::shared_mutex> lg(_locker);
+			if (_queries.empty()) {
+				break;
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(300));
+	}
+}
+
 Id Client::getId() const {
   return _id;
 }

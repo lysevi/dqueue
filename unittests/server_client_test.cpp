@@ -368,6 +368,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client2->publish(PublishParams(qname), {1, 2, 3}, OperationType::Async);
   client2->connect();
   EXPECT_TRUE(client2->is_connected());
+  client2->waitAll();
 
   while (sended != 1 && client2->messagesInPool() != 0) {
     logger("server.client.publish-from-pool sended!=1");

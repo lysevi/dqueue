@@ -105,7 +105,6 @@ void Server::onStartComplete() {
 }
 
 ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection_Ptr i) {
-  // TODO logic must be implemented in call code
   User cl;
   cl.id = i->get_id();
   cl.login = "not set";

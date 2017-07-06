@@ -47,6 +47,7 @@ public:
     auto qname = "serverQ_";
     dqueue::SubscriptionParams sp(qname, "server");
     subscribe(sp, this, dqueue::OperationType::Async);
+    // publish can by sync or async.
     publish(dqueue::PublishParams(qname, "client"), {1}, dqueue::OperationType::Async);
   }
 

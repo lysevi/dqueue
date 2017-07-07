@@ -38,7 +38,6 @@ void Server::onSendToClient(const PublishParams &info, const std::vector<uint8_t
     this->callConsumer(info, rd, id);
   } else {
     std::lock_guard<std::mutex> lg(_locker);
-    // TODO make one allocation in onNewMessage
     queries::Publish pub(info, rd, _nextMessageId++);
     auto nd = pub.toNetworkMessage();
     this->sendTo(id, nd);

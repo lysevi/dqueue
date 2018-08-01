@@ -22,7 +22,7 @@ bool server_stop = false;
 std::shared_ptr<Server> server = nullptr;
 boost::asio::io_service *service;
 void server_thread() {
-  AbstractServer::Params p;
+  network::AbstractServer::Params p;
   p.port = 4040;
   service = new boost::asio::io_service();
   server = std::make_shared<Server>(service, p);
@@ -40,7 +40,7 @@ void server_thread() {
 }
 
 void testForReconnection(const size_t clients_count) {
-  AbstractClient::Params p("empty", "localhost", 4040);
+  network::AbstractClient::Params p("empty", "localhost", 4040);
 
   server_stop = false;
   std::thread t(server_thread);
@@ -116,9 +116,9 @@ TEST_CASE("server.client.create_queue") {
   }
 
   auto client = std::make_shared<Client>(
-      service, AbstractClient::Params("client1", "localhost", 4040));
+      service, network::AbstractClient::Params("client1", "localhost", 4040));
   auto client2 = std::make_shared<Client>(
-      service, AbstractClient::Params("client2", "localhost", 4040));
+      service, network::AbstractClient::Params("client2", "localhost", 4040));
   client->connectAsync();
   client2->connectAsync();
   while (!client->is_connected() || !client2->is_connected()) {
@@ -218,9 +218,9 @@ TEST_CASE("server.client.empty_queue-erase") {
   }
 
   auto client = std::make_shared<Client>(
-      service, AbstractClient::Params("client1", "localhost", 4040));
+      service, network::AbstractClient::Params("client1", "localhost", 4040));
   auto client2 = std::make_shared<Client>(
-      service, AbstractClient::Params("client2", "localhost", 4040));
+      service, network::AbstractClient::Params("client2", "localhost", 4040));
 
   client->connect();
   client2->connect();
@@ -288,7 +288,7 @@ TEST_CASE("server.client.server-side-queue") {
   }
 
   auto client = std::make_shared<Client>(
-      service, AbstractClient::Params("client", "localhost", 4040));
+      service, network::AbstractClient::Params("client", "localhost", 4040));
 
   client->connect();
 
@@ -346,7 +346,7 @@ TEST_CASE("server.client.publish-from-pool") {
   }
 
   auto client = std::make_shared<Client>(
-      service, AbstractClient::Params("client", "localhost", 4040, true));
+      service, network::AbstractClient::Params("client", "localhost", 4040, true));
   client->connect();
   EXPECT_TRUE(client->is_connected());
 
@@ -364,7 +364,7 @@ TEST_CASE("server.client.publish-from-pool") {
   client->subscribe(SubscriptionParams(qname), &clientConsumer);
 
   auto client2 = std::make_shared<Client>(
-      service, AbstractClient::Params("client2", "localhost", 4040));
+      service, network::AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
   client2->publish(PublishParams(qname), {1, 2, 3}, OperationType::Async);
   client2->connect();
@@ -394,7 +394,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
   }
 
   auto client1 = std::make_shared<Client>(
-      service, AbstractClient::Params("client", "localhost", 4040, true));
+      service, network::AbstractClient::Params("client", "localhost", 4040, true));
   client1->connect();
   EXPECT_TRUE(client1->is_connected());
 
@@ -415,7 +415,7 @@ TEST_CASE("server.client.publish-tag-filtration") {
   client1->subscribe(SubscriptionParams(qname, "tag1"), &client1Consumer);
 
   auto client2 = std::make_shared<Client>(
-      service, AbstractClient::Params("client2", "localhost", 4040));
+      service, network::AbstractClient::Params("client2", "localhost", 4040));
   EXPECT_FALSE(client2->is_connected());
   LambdaEventConsumer client2Consumer(handler);
   client2->connect();

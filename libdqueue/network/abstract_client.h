@@ -1,10 +1,11 @@
 #pragma once
 
-#include <libdqueue/async_io.h>
 #include <libdqueue/exports.h>
+#include <libdqueue/network/async_io.h>
 #include <boost/asio.hpp>
 
 namespace dqueue {
+namespace network {
 
 class AbstractClient : public std::enable_shared_from_this<AbstractClient> {
 public:
@@ -46,4 +47,5 @@ protected:
   bool isStoped = false;
   Params _params;
 };
+} // namespace network
 } // namespace dqueue

@@ -1,7 +1,7 @@
 #include "helpers.h"
-#include <libdqueue/abstract_client.h>
-#include <libdqueue/abstract_server.h>
-#include <libdqueue/async_io.h>
+#include <libdqueue/network/abstract_server.h>
+#include <libdqueue/network/async_io.h>
+#include <libdqueue/network/abstract_client.h>
 #include <libdqueue/utils/logger.h>
 #include <catch.hpp>
 
@@ -15,6 +15,7 @@ using namespace std::placeholders;
 using namespace boost::asio;
 
 using namespace dqueue;
+using namespace dqueue::network;
 using namespace dqueue::utils;
 
 namespace abstract_server_client_ns {

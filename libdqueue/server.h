@@ -1,9 +1,9 @@
 #pragma once
 
-#include <libdqueue/abstract_server.h>
-#include <libdqueue/async_io.h>
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
+#include <libdqueue/network/abstract_server.h>
+#include <libdqueue/network/async_io.h>
 #include <libdqueue/node.h>
 #include <libdqueue/node_settings.h>
 #include <libdqueue/queries.h>
@@ -17,9 +17,11 @@
 
 namespace dqueue {
 
-class Server : public AbstractServer, public utils::non_copy, public IQueueClient {
+class Server : public network::AbstractServer,
+               public utils::non_copy,
+               public IQueueClient {
 public:
-  EXPORT Server(boost::asio::io_service *service, AbstractServer::Params &p);
+  EXPORT Server(boost::asio::io_service *service, network::AbstractServer::Params &p);
   EXPORT virtual ~Server();
   /*EXPORT void serverStart();
   EXPORT void stopServer();
@@ -28,7 +30,8 @@ public:
   EXPORT std::vector<User> users() const;
 
   EXPORT void onStartComplete() override;
-  EXPORT ON_NEW_CONNECTION_RESULT onNewConnection(ClientConnection_Ptr i) override;
+  EXPORT network::ON_NEW_CONNECTION_RESULT
+  onNewConnection(ClientConnection_Ptr i) override;
   EXPORT void createQueue(const QueueSettings &settings,
                           const OperationType ot = OperationType::Sync) override;
   EXPORT void subscribe(const SubscriptionParams &settings, EventConsumer *handler,

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <libdqueue/abstract_client.h>
 #include <libdqueue/exports.h>
 #include <libdqueue/iqueue_client.h>
 #include <libdqueue/kinds.h>
 #include <libdqueue/memory_message_pool.h>
+#include <libdqueue/network/abstract_client.h>
 #include <libdqueue/node.h>
 #include <libdqueue/q.h>
 #include <libdqueue/queries.h>
@@ -25,7 +25,9 @@ struct AsyncOperationResult {
   }
 };
 
-class Client : public AbstractClient, public IQueueClient, public utils::non_copy {
+class Client : public network::AbstractClient,
+               public IQueueClient,
+               public utils::non_copy {
 public:
   Client() = delete;
   EXPORT Client(boost::asio::io_service *service, const AbstractClient::Params &_params);
@@ -36,7 +38,7 @@ public:
   EXPORT void disconnect();
   EXPORT bool is_connected();
 
-  EXPORT void waitAll()const;   
+  EXPORT void waitAll() const;
   EXPORT Id getId() const;
   EXPORT size_t messagesInPool() const; // count dont sended messages.
 

@@ -1,11 +1,12 @@
 #pragma once
 
-#include <libdqueue/async_io.h>
 #include <libdqueue/exports.h>
+#include <libdqueue/network/async_io.h>
 #include <libdqueue/users.h>
 #include <mutex>
 
 namespace dqueue {
+namespace network {
 
 enum class ON_NEW_CONNECTION_RESULT { ACCEPT, DISCONNECT };
 
@@ -69,4 +70,5 @@ protected:
   Params _params;
   bool _is_stoped = false;
 };
+} // namespace network
 } // namespace dqueue

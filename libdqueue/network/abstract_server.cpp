@@ -1,4 +1,4 @@
-#include <libdqueue/abstract_server.h>
+#include <libdqueue/network/abstract_server.h>
 #include <libdqueue/utils/utils.h>
 #include <functional>
 #include <string>
@@ -8,6 +8,7 @@ using namespace boost::asio;
 using namespace boost::asio::ip;
 
 using namespace dqueue;
+using namespace dqueue::network;
 
 AbstractServer::ClientConnection::ClientConnection(Id id_, socket_ptr sock_,
                                                    std::shared_ptr<AbstractServer> s)
@@ -38,7 +39,6 @@ void AbstractServer::ClientConnection::close() {
     this->_server->erase_client_description(this->shared_from_this());
   }
 }
-
 
 void AbstractServer::ClientConnection::onNetworkError(
     const NetworkMessage_ptr &d, const boost::system::error_code &err) {

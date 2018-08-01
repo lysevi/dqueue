@@ -1,7 +1,7 @@
 #pragma once
 
+#include <libdqueue/network/socket_ptr.h>
 #include <libdqueue/network_message.h>
-#include <libdqueue/socket_ptr.h>
 #include <libdqueue/utils/async/locker.h>
 #include <libdqueue/utils/exception.h>
 #include <atomic>
@@ -9,6 +9,7 @@
 #include <memory>
 
 namespace dqueue {
+namespace network {
 class AsyncIO : public std::enable_shared_from_this<AsyncIO> {
 public:
   /// if method set 'cancel' to true, then read loop stoping.
@@ -40,4 +41,5 @@ private:
   onDataRecvHandler _on_recv_hadler;
   onNetworkErrorHandler _on_error_handler;
 };
+} // namespace network
 } // namespace dqueue

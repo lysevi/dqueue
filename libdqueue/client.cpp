@@ -1,6 +1,7 @@
 #include <libdqueue/client.h>
 
 using namespace dqueue;
+using namespace network;
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
     : AbstractClient(service, _params) {
@@ -100,15 +101,15 @@ size_t Client::messagesInPool() const {
 }
 
 void Client::waitAll() const {
-	while (true) {
-		if (_messagePool->size() == size_t(0)) {
-			std::lock_guard<std::shared_mutex> lg(_locker);
-			if (_queries.empty()) {
-				break;
-			}
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(300));
-	}
+  while (true) {
+    if (_messagePool->size() == size_t(0)) {
+      std::lock_guard<std::shared_mutex> lg(_locker);
+      if (_queries.empty()) {
+        break;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  }
 }
 
 Id Client::getId() const {

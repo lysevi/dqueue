@@ -11,9 +11,8 @@ using namespace dqueue;
 
 Server::Server(boost::asio::io_service *service, AbstractServer::Params &p)
     : AbstractServer(service, p) {
-  DataHandler dhandler = [this](const PublishParams &info, const std::vector<uint8_t> &rd, Id id) {
-    this->onSendToClient(info, rd, id);
-  };
+  DataHandler dhandler = [this](const PublishParams &info, const std::vector<uint8_t> &rd,
+                                Id id) { this->onSendToClient(info, rd, id); };
   _users = UserBase::create();
   _node = std::make_unique<Node>(Node::Settings(), dhandler, _users);
   _users->append({"server", ServerID});
@@ -33,7 +32,8 @@ void Server::onNetworkError(ClientConnection_Ptr i, const NetworkMessage_ptr &d,
   }
 }
 
-void Server::onSendToClient(const PublishParams &info, const std::vector<uint8_t> &rd, Id id) {
+void Server::onSendToClient(const PublishParams &info, const std::vector<uint8_t> &rd,
+                            Id id) {
   if (id == ServerID) {
     this->callConsumer(info, rd, id);
   } else {
@@ -103,12 +103,12 @@ void Server::onStartComplete() {
   logger_info("server started.");
 }
 
-ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection_Ptr i) {
+network::ON_NEW_CONNECTION_RESULT Server::onNewConnection(ClientConnection_Ptr i) {
   User cl;
   cl.id = i->get_id();
   cl.login = "not set";
   _users->append(cl);
-  return ON_NEW_CONNECTION_RESULT::ACCEPT;
+  return network::ON_NEW_CONNECTION_RESULT::ACCEPT;
 }
 
 void Server::onDisconnect(const AbstractServer::ClientConnection_Ptr &i) {

@@ -1,8 +1,9 @@
-#include <libdqueue/async_io.h>
+#include <libdqueue/network/async_io.h>
 #include <libdqueue/utils/exception.h>
 
 using namespace boost::asio;
 using namespace dqueue;
+using namespace dqueue::network;
 
 AsyncIO::AsyncIO(onDataRecvHandler onRecv, onNetworkErrorHandler onErr) {
   _messages_to_send = 0;
@@ -112,8 +113,9 @@ void AsyncIO::readNextAsync() {
       }
     };
 
-    async_read(*spt.get(), buffer((void *)&(ptr->next_message_size),
-                                  NetworkMessage::SIZE_OF_MESSAGE_SIZE),
-               on_read_size);
+    async_read(
+        *spt.get(),
+        buffer((void *)&(ptr->next_message_size), NetworkMessage::SIZE_OF_MESSAGE_SIZE),
+        on_read_size);
   }
 }

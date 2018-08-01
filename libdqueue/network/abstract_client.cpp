@@ -1,6 +1,7 @@
-#include <libdqueue/abstract_client.h>
+#include <libdqueue/network/abstract_client.h>
 
 using namespace dqueue;
+using namespace dqueue::network;
 
 AbstractClient::AbstractClient(boost::asio::io_service *service, const Params &params)
     : _service(service), _params(params) {}

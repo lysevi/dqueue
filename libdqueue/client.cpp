@@ -4,9 +4,7 @@ using namespace dqueue;
 using namespace network;
 
 Client::Client(boost::asio::io_service *service, const AbstractClient::Params &_params)
-    : AbstractClient(service, _params) {
-  _messagePool = std::make_shared<MemoryMessagePool>();
-}
+    : AbstractClient(service, _params) {}
 
 Client::~Client() {}
 
@@ -35,10 +33,6 @@ void Client::onConnect() {
   _loginConfirmed = false;
   this->send(lg.toNetworkMessage());
 
-  auto all = _messagePool->all();
-  for (auto p : all) {
-    this->publish_inner(p);
-  }
   logger("client(", _params.login, "):: send login sended.");
 }
 
@@ -46,13 +40,6 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
   auto hdr = d->cast_to_header();
 
   switch (hdr->kind) {
-  case (NetworkMessage::message_kind)MessageKinds::PUBLISH: {
-    logger("client (", _params.login, "): recv publish");
-    auto cs = queries::Publish(d);
-    this->callConsumer(cs.toPublishParams(), cs.data, _id);
-    onMessage(cs.qname, cs.data);
-    break;
-  }
   case (NetworkMessage::message_kind)MessageKinds::OK: {
     logger("client (", _params.login, "): recv ok");
     auto cs = queries::Ok(d);
@@ -63,7 +50,6 @@ void Client::onNewMessage(const NetworkMessage_ptr &d, bool &cancel) {
       if (it == _queries.end()) {
         THROW_EXCEPTION("unknow _query id=", cs.id);
       } else {
-        _messagePool->erase(cs.id);
         it->second.locker->unlock();
         _queries.erase(it);
       }
@@ -96,105 +82,36 @@ void Client::onNetworkError(const NetworkMessage_ptr &d,
   _loginConfirmed = false;
 }
 
-size_t Client::messagesInPool() const {
-  return _messagePool->size();
-}
-
 void Client::waitAll() const {
   while (true) {
-    if (_messagePool->size() == size_t(0)) {
-      std::lock_guard<std::shared_mutex> lg(_locker);
-      if (_queries.empty()) {
-        break;
-      }
+    std::lock_guard<std::shared_mutex> lg(_locker);
+    if (_queries.empty()) {
+      break;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
   }
 }
 
-Id Client::getId() const {
-  return _id;
-}
-
-void Client::createQueue(const QueueSettings &settings, const OperationType ot) {
-  AsyncOperationResult qr;
-  {
-    std::lock_guard<std::shared_mutex> lg(_locker);
-    auto msgId = getNextId();
-    logger_info("client (", _params.login, "): createQueue ", settings.name);
-    queries::CreateQueue cq(settings.name, msgId);
-    auto nd = cq.toNetworkMessage();
-
-    qr = makeNewQResult(msgId);
-    send(nd);
-  }
-  qr.locker->lock();
-}
-
-void Client::subscribe(const SubscriptionParams &settings, EventConsumer *handler,
-                       const OperationType ot) {
-  AsyncOperationResult qr;
-  {
-    std::lock_guard<std::shared_mutex> lg(_locker);
-    logger_info("client (", _params.login, "): subscribe ", settings.queueName);
-    this->addHandler(settings, handler);
-    auto msgId = getNextId();
-    queries::ChangeSubscribe cs(settings, msgId);
-    auto nd = cs.toNetworkMessage();
-    nd->cast_to_header()->kind =
-        static_cast<NetworkMessage::message_kind>(MessageKinds::SUBSCRIBE);
-    qr = makeNewQResult(msgId);
-    send(nd);
-  }
-  if (ot == OperationType::Sync) {
-    qr.locker->lock();
-  }
-}
-
-void Client::unsubscribe(const std::string &qname, const OperationType ot) {
-  AsyncOperationResult qr;
-  {
-    std::lock_guard<std::shared_mutex> lg(_locker);
-    logger_info("client (", _params.login, "): unsubscribe ", qname);
-    SubscriptionParams settings{qname};
-    auto msgId = getNextId();
-    queries::ChangeSubscribe cs(settings, msgId);
-
-    auto nd = cs.toNetworkMessage();
-    nd->cast_to_header()->kind =
-        static_cast<NetworkMessage::message_kind>(MessageKinds::UNSUBSCRIBE);
-    qr = makeNewQResult(msgId);
-    send(nd);
-  }
-  if (ot == OperationType::Sync) {
-    qr.locker->lock();
-  }
-}
-
-void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data,
-                     const OperationType ot) {
-  AsyncOperationResult qr;
-  {
-    std::lock_guard<std::shared_mutex> lg(_locker);
-    auto msgId = getNextId();
-    queries::Publish pb(settings, data, msgId);
-    _messagePool->append(pb);
-    qr = makeNewQResult(msgId);
-    publish_inner(pb);
-  }
-  if (ot == OperationType::Sync) {
-    qr.locker->lock();
-  }
-}
-
-void Client::publish_inner(const queries::Publish &pb) {
-  logger_info("client (", _params.login, "): publish ", pb.qname);
-  auto nd = pb.toNetworkMessage();
-  send(nd);
-}
+// void Client::publish(const PublishParams &settings, const std::vector<uint8_t> &data,
+//                     const OperationType ot) {
+//  AsyncOperationResult qr;
+//  {
+//    std::lock_guard<std::shared_mutex> lg(_locker);
+//    auto msgId = getNextId();
+//    queries::Publish pb(settings, data, msgId);
+//    _messagePool->append(pb);
+//    qr = makeNewQResult(msgId);
+//    publish_inner(pb);
+//  }
+//  if (ot == OperationType::Sync) {
+//    qr.locker->lock();
+//  }
+//}
 
 void Client::send(const NetworkMessage_ptr &nd) {
   if (_async_connection != nullptr) {
     _async_connection->send(nd);
   }
 }
+
+

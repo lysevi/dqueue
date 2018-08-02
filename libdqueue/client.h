@@ -1,12 +1,8 @@
 #pragma once
 
 #include <libdqueue/exports.h>
-#include <libdqueue/iqueue_client.h>
 #include <libdqueue/kinds.h>
-#include <libdqueue/memory_message_pool.h>
 #include <libdqueue/network/abstract_client.h>
-#include <libdqueue/node.h>
-#include <libdqueue/q.h>
 #include <libdqueue/queries.h>
 #include <libdqueue/utils/async/locker.h>
 #include <libdqueue/utils/utils.h>
@@ -25,9 +21,7 @@ struct AsyncOperationResult {
   }
 };
 
-class Client : public network::AbstractClient,
-               public IQueueClient,
-               public utils::non_copy {
+class Client : public network::AbstractClient, public utils::non_copy {
 public:
   Client() = delete;
   EXPORT Client(boost::asio::io_service *service, const AbstractClient::Params &_params);
@@ -39,8 +33,7 @@ public:
   EXPORT bool is_connected();
 
   EXPORT void waitAll() const;
-  EXPORT Id getId() const;
-  EXPORT size_t messagesInPool() const; // count dont sended messages.
+  uint64_t getId() const { return _id;}
 
   EXPORT void onConnect() override;
 
@@ -50,35 +43,24 @@ public:
   EXPORT virtual void onMessage(const std::string & /*queueName*/,
                                 const std::vector<uint8_t> & /*d*/){};
 
-  EXPORT void createQueue(const QueueSettings &settings,
-                          const OperationType ot = OperationType::Sync) override;
-  EXPORT void subscribe(const SubscriptionParams &settings, EventConsumer *handler,
-                        const OperationType ot = OperationType::Sync) override;
-  EXPORT void unsubscribe(const std::string &qname,
-                          const OperationType ot = OperationType::Sync) override;
-  EXPORT void publish(const PublishParams &settings, const std::vector<uint8_t> &data,
-                      const OperationType ot = OperationType::Sync) override;
-
 private:
   EXPORT void onNewMessage(const NetworkMessage_ptr &d, bool &cancel) override;
-  void publish_inner(const queries::Publish &pb);
   void send(const NetworkMessage_ptr &nd);
 
   uint64_t getNextId() { return _nextMessageId++; }
 
-  AsyncOperationResult makeNewQResult(uint64_t msgId) {
+  /*AsyncOperationResult makeNewQResult(uint64_t msgId) {
     auto qr = AsyncOperationResult::makeNew();
     _queries[msgId] = qr;
     qr.locker->lock();
     return qr;
-  }
+  }*/
 
 protected:
   mutable std::shared_mutex _locker;
   uint64_t _nextMessageId = 0;
-  MessagePool_Ptr _messagePool;
   bool _loginConfirmed = false;
-  Id _id;
+  uint64_t _id = 0;
   std::map<uint64_t, AsyncOperationResult> _queries;
 };
 } // namespace dqueue

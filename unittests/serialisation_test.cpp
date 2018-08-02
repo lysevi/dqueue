@@ -1,5 +1,4 @@
 #include "helpers.h"
-#include <libdqueue/q.h>
 #include <libdqueue/queries.h>
 #include <libdqueue/serialisation.h>
 #include <libdqueue/utils/utils.h>
@@ -75,50 +74,4 @@ TEST_CASE("serialisation.scheme") {
   serialisation::Scheme<int, std::string>::read(it, unpacked1, unpackedS);
   EXPECT_EQ(unpacked1, 11);
   EXPECT_EQ(unpackedS, str);
-}
-
-TEST_CASE("serialisation.createQueue") {
-  std::string name = "node.createQueue.name";
-
-  CreateQueue qs(name, 0);
-  EXPECT_EQ(qs.name, name);
-
-  auto nd = qs.toNetworkMessage();
-  EXPECT_EQ(nd->cast_to_header()->kind,
-            (NetworkMessage::message_kind)MessageKinds::CREATE_QUEUE);
-
-  CreateQueue repacked(nd);
-  EXPECT_EQ(repacked.name.size(), name.size());
-  EXPECT_EQ(repacked.name, name);
-}
-
-TEST_CASE("serialisation.subscribe") {
-  std::string qname = "serialisation.subscribe";
-  ChangeSubscribe cs{qname, 0};
-  auto nd = cs.toNetworkMessage();
-  EXPECT_EQ(nd->cast_to_header()->kind,
-            (NetworkMessage::message_kind)MessageKinds::SUBSCRIBE);
-
-  auto repacked = ChangeSubscribe(nd);
-  EXPECT_EQ(repacked.qname, qname);
-  EXPECT_EQ(repacked.qname.size(), qname.size());
-}
-
-TEST_CASE("serialisation.publish") {
-  std::string qname = "serialisation.publish";
-  std::vector<uint8_t> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  Publish pb{qname, data, std::numeric_limits<uint64_t>::max()};
-  auto nd = pb.toNetworkMessage();
-  EXPECT_EQ(nd->cast_to_header()->kind,
-            (NetworkMessage::message_kind)MessageKinds::PUBLISH);
-
-  auto repacked = Publish(nd);
-  EXPECT_EQ(repacked.qname, qname);
-  EXPECT_EQ(repacked.qname.size(), qname.size());
-
-  EXPECT_EQ(repacked.data.size(), data.size());
-  bool isdataEqual =
-      std::equal(data.begin(), data.end(), repacked.data.begin(), repacked.data.end());
-  EXPECT_TRUE(isdataEqual);
-  EXPECT_EQ(repacked.messageId, pb.messageId);
 }
